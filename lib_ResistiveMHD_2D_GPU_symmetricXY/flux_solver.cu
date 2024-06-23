@@ -2,10 +2,7 @@
 
 
 FluxSolver::FluxSolver()
-    : flux(nx * ny), 
-      currentX(nx * ny), 
-      currentY(nx * ny), 
-      currentZ(nx * ny)
+    : flux(nx * ny)
 {
 }
 
@@ -17,6 +14,8 @@ thrust::device_vector<Flux> FluxSolver::getFluxF(
     hLLD.calculateFluxF(U);
     flux = hLLD.getFlux();
 
+    addResistiveTermToFluxF(U);
+
     return flux;
 }
 
@@ -27,6 +26,8 @@ thrust::device_vector<Flux> FluxSolver::getFluxG(
 {
     hLLD.calculateFluxG(U);
     flux = hLLD.getFlux();
+    
+    addResistiveTermToFluxG(U);
 
     return flux;
 }
