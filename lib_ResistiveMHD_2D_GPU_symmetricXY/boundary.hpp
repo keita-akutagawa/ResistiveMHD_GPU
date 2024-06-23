@@ -9,11 +9,11 @@ private:
 
 public:
 
-    void periodicBoundaryX2nd(
+    void symmetricBoundaryX2nd(
         thrust::device_vector<ConservationParameter>& U
     );
 
-    void periodicBoundaryY2nd(
+    void symmetricBoundaryY2nd(
         thrust::device_vector<ConservationParameter>& U
     );
 

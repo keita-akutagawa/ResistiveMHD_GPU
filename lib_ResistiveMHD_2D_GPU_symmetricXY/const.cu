@@ -19,4 +19,6 @@ void initializeDeviceConstants() {
     cudaMemcpyToSymbol(device_gamma_mhd, &gamma_mhd, sizeof(double));
 
     cudaMemcpyToSymbol(device_dt, &dt, sizeof(double));
+
+    cudaMemcpyToSymbol(device_eta, &eta, sizeof(double));
 }

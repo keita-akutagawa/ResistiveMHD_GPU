@@ -5,10 +5,10 @@
 #include <string>
 #include <thrust/extrema.h>
 #include "const.hpp"
-#include "idealMHD_2D.hpp"
+#include "resistiveMHD_2D.hpp"
 
 
-IdealMHD2D::IdealMHD2D()
+ResistiveMHD2D::ResistiveMHD2D()
     : fluxF(nx * ny),
       fluxG(nx * ny),
       U(nx * ny),
@@ -131,7 +131,7 @@ struct oneStepSecondFunctor {
 };
 
 
-void IdealMHD2D::oneStepRK2()
+void ResistiveMHD2D::oneStepRK2()
 {
     dim3 threadsPerBlock(16, 16);
     dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
@@ -169,17 +169,16 @@ void IdealMHD2D::oneStepRK2()
     ct.divBClean(bXOld, bYOld, UBar);
 
     //これはどうにかすること。保守性が低い
-    boundary.periodicBoundaryX2nd(UBar);
-    boundary.periodicBoundaryY2nd(UBar);
+    boundary.symmetricBoundaryX2nd(UBar);
+    boundary.symmetricBoundaryY2nd(UBar);
 
     shiftUToCenterForCT(UBar);
     fluxF = fluxSolver.getFluxF(UBar);
     fluxG = fluxSolver.getFluxG(UBar);
     backUToCenterHalfForCT(UBar);
 
-    thrust::copy(U.begin(), U.end(), tmpU.begin());
     auto tupleForFluxSecond = thrust::make_tuple(
-        tmpU.begin(), UBar.begin(), fluxF.begin(), fluxF.begin() - ny, fluxG.begin(), fluxG.begin() - 1
+        U.begin(), UBar.begin(), fluxF.begin(), fluxF.begin() - ny, fluxG.begin(), fluxG.begin() - 1
     );
     auto tupleForFluxSecondIterator = thrust::make_zip_iterator(tupleForFluxSecond);
     thrust::transform(
@@ -192,12 +191,12 @@ void IdealMHD2D::oneStepRK2()
     ct.divBClean(bXOld, bYOld, U);
 
     //これはどうにかすること。保守性が低い
-    boundary.periodicBoundaryX2nd(U);
-    boundary.periodicBoundaryY2nd(U);
+    boundary.symmetricBoundaryX2nd(U);
+    boundary.symmetricBoundaryY2nd(U);
 }
 
 
-void IdealMHD2D::save(
+void ResistiveMHD2D::save(
     std::string directoryname, 
     std::string filenameWithoutStep, 
     int step
@@ -276,7 +275,7 @@ struct calculateDtFunctor {
 };
 
 
-void IdealMHD2D::calculateDt()
+void ResistiveMHD2D::calculateDt()
 {
     thrust::transform(
         U.begin(), 
@@ -300,7 +299,7 @@ struct IsNan
     }
 };
 
-bool IdealMHD2D::checkCalculationIsCrashed()
+bool ResistiveMHD2D::checkCalculationIsCrashed()
 {
     bool result = thrust::transform_reduce(
         U.begin(), U.end(), IsNan(), false, thrust::logical_or<bool>()
@@ -338,7 +337,7 @@ __global__ void shiftBYToCenterForCT_kernel(
 }
 
 
-void IdealMHD2D::shiftUToCenterForCT(
+void ResistiveMHD2D::shiftUToCenterForCT(
     thrust::device_vector<ConservationParameter>& U
 )
 {
@@ -396,7 +395,7 @@ __global__ void backBYToCenterForCT_kernel(
 }
 
 
-void IdealMHD2D::backUToCenterHalfForCT(
+void ResistiveMHD2D::backUToCenterHalfForCT(
     thrust::device_vector<ConservationParameter>& U
 )
 {
@@ -429,7 +428,7 @@ void IdealMHD2D::backUToCenterHalfForCT(
 
 
 // getter
-thrust::device_vector<ConservationParameter> IdealMHD2D::getU()
+thrust::device_vector<ConservationParameter> ResistiveMHD2D::getU()
 {
     return U;
 }

@@ -6,7 +6,7 @@
 #include "boundary.hpp"
 
 
-class IdealMHD2D
+class ResistiveMHD2D
 {
 private:
     FluxSolver fluxSolver;
@@ -14,7 +14,6 @@ private:
     thrust::device_vector<Flux> fluxG;
     thrust::device_vector<ConservationParameter> U;
     thrust::device_vector<ConservationParameter> UBar;
-    thrust::device_vector<ConservationParameter> tmpU;
     thrust::device_vector<double> dtVector;
     Boundary boundary;
     CT ct;
@@ -24,7 +23,7 @@ private:
     thrust::host_vector<ConservationParameter> hU;
 
 public:
-    IdealMHD2D();
+    ResistiveMHD2D();
 
     virtual void initializeU(); 
 

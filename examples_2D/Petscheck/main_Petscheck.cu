@@ -4,13 +4,13 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include "../../lib_IdealMHD_2D_GPU_periodicX_symmetricY/const.hpp"
-#include "../../lib_IdealMHD_2D_GPU_periodicX_symmetricY/idealMHD_2D_periodicX_symmetricY.hpp"
+#include "../../lib_ResistiveMHD_2D_GPU_symmetricXY/const.hpp"
+#include "../../lib_ResistiveMHD_2D_GPU_symmetricXY/resistiveMHD_2D.hpp"
 
 
-std::string directoryname = "results_highreso";
-std::string filenameWithoutStep = "KH";
-std::ofstream logfile("log_KH_highreso.txt");
+std::string directoryname = "results";
+std::string filenameWithoutStep = "Petscheck";
+std::ofstream logfile("log_Petscheck.txt");
 
 const double EPS = 1e-20;
 const double PI = 3.141592653589793;
@@ -18,10 +18,7 @@ const double PI = 3.141592653589793;
 const double gamma_mhd = 5.0 / 3.0;
 
 const double shear_thickness = 1.0;
-const double rr = 0.2;
-const double br = 1.0;
 const double beta = 2.0;
-const double theta = PI / 2.0;
 const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = beta * b0 * b0 / 2.0;
@@ -67,10 +64,7 @@ __constant__ double device_gamma_mhd;
 __device__ double device_dt;
 
 __constant__ double device_shear_thickness;
-__constant__ double device_rr;
-__constant__ double device_br;
 __constant__ double device_beta;
-__constant__ double device_theta;
 __constant__ double device_rho0;
 __constant__ double device_b0;
 __constant__ double device_p0;
@@ -83,43 +77,27 @@ __global__ void initializeU_kernel(ConservationParameter* U)
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (i < device_nx && j < device_ny) {
-        double xPosition, yPosition;
-        xPosition = i * device_dx - device_xCenter;
-        yPosition = j * device_dy - device_yCenter;
-
-        double rho, u, v, w, bx, by, bz, p, e;
-        rho = device_rho0 / 2.0 * ((1.0 - device_rr) * tanh(yPosition / device_shear_thickness) + 1.0 + device_rr);
-        u = -device_v0 / 2.0 * tanh(yPosition / device_shear_thickness);
-        v = 0.02 * device_v0 * cos(2.0 * device_PI * xPosition / device_xmax) / pow(cosh(yPosition / device_shear_thickness), 2);
-        w = 0.0;
-        bx = device_b0 / 2.0 * ((1.0 - device_br) * tanh(yPosition / device_shear_thickness) + 1.0 + device_br) * cos(device_theta);
-        by = 0.0;
-        bz = device_b0 / 2.0 * ((1.0 - device_br) * tanh(yPosition / device_shear_thickness) + 1.0 + device_br) * sin(device_theta);
-        p = device_beta * (bx * bx + by * by + bz * bz) / 2.0;
-        e = p / (device_gamma_mhd - 1.0)
-            + 0.5 * rho * (u * u + v * v + w * w)
-            + 0.5 * (bx * bx + by * by + bz * bz);
+        double rho, u, v, w, bX, bY, bZ, e, p;
+        
+        
         
         U[j + i * device_ny].rho  = rho;
         U[j + i * device_ny].rhoU = rho * u;
         U[j + i * device_ny].rhoV = rho * v;
         U[j + i * device_ny].rhoW = rho * w;
-        U[j + i * device_ny].bX   = bx;
-        U[j + i * device_ny].bY   = by;
-        U[j + i * device_ny].bZ   = bz;
+        U[j + i * device_ny].bX   = bX;
+        U[j + i * device_ny].bY   = bY;
+        U[j + i * device_ny].bZ   = bZ;
         U[j + i * device_ny].e    = e;
     }
 }
 
-void IdealMHD2DPeriodicXSymmetricY::initializeU()
+void ResistiveMHD2D::initializeU()
 {
     cudaMemcpyToSymbol(device_xCenter, &xCenter, sizeof(double));
     cudaMemcpyToSymbol(device_yCenter, &yCenter, sizeof(double));
     cudaMemcpyToSymbol(device_shear_thickness, &shear_thickness, sizeof(double));
-    cudaMemcpyToSymbol(device_rr, &rr, sizeof(double));
-    cudaMemcpyToSymbol(device_br, &br, sizeof(double));
     cudaMemcpyToSymbol(device_beta, &beta, sizeof(double));
-    cudaMemcpyToSymbol(device_theta, &theta, sizeof(double));
     cudaMemcpyToSymbol(device_rho0, &rho0, sizeof(double));
     cudaMemcpyToSymbol(device_b0, &b0, sizeof(double));
     cudaMemcpyToSymbol(device_p0, &p0, sizeof(double));
@@ -139,13 +117,13 @@ int main()
 {
     initializeDeviceConstants();
 
-    IdealMHD2DPeriodicXSymmetricY idealMHD2DPeriodicXSymmetricY;
+    ResistiveMHD2D resistiveMHD2D;
 
-    idealMHD2DPeriodicXSymmetricY.initializeU();
+    resistiveMHD2D.initializeU();
 
     for (int step = 0; step < totalStep+1; step++) {
         if (step % recordStep == 0) {
-            idealMHD2DPeriodicXSymmetricY.save(directoryname, filenameWithoutStep, step);
+            resistiveMHD2D.save(directoryname, filenameWithoutStep, step);
             logfile << std::to_string(step) << ","
                     << std::setprecision(4) << totalTime
                     << std::endl;
@@ -154,9 +132,9 @@ int main()
                       << std::endl;
         }
         
-        idealMHD2DPeriodicXSymmetricY.oneStepRK2();
+        resistiveMHD2D.oneStepRK2();
 
-        if (idealMHD2DPeriodicXSymmetricY.checkCalculationIsCrashed()) {
+        if (resistiveMHD2D.checkCalculationIsCrashed()) {
             std::cout << "Calculation stopped! : " << step << " steps" << std::endl;
             return 0;
         }

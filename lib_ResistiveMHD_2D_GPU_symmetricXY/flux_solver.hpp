@@ -16,6 +16,10 @@ public:
     thrust::device_vector<Flux> getFluxG(
         const thrust::device_vector<ConservationParameter>& U
     );
+
+    virtual void addResistiveTermToFluxF();
+
+    virtual void addResistiveTermToFluxG();
 };
 
 
