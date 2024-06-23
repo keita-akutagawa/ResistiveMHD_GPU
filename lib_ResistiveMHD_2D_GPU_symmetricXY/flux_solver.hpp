@@ -9,6 +9,8 @@ private:
     thrust::device_vector<Flux> flux;
 
 public:
+    FluxSolver(); 
+
     thrust::device_vector<Flux> getFluxF(
         const thrust::device_vector<ConservationParameter>& U
     );
@@ -17,9 +19,13 @@ public:
         const thrust::device_vector<ConservationParameter>& U
     );
 
-    virtual void addResistiveTermToFluxF();
+    virtual void addResistiveTermToFluxF(
+        const thrust::device_vector<ConservationParameter>& U
+    );
 
-    virtual void addResistiveTermToFluxG();
+    virtual void addResistiveTermToFluxG(
+        const thrust::device_vector<ConservationParameter>& U
+    );
 };
 
 

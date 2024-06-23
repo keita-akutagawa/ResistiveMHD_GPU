@@ -17,28 +17,27 @@ const double PI = 3.141592653589793;
 
 const double gamma_mhd = 5.0 / 3.0;
 
-const double shear_thickness = 1.0;
-const double beta = 2.0;
+const double sheat_thickness = 1.0;
+const double betaUpstream = 0.2;
 const double rho0 = 1.0;
 const double b0 = 1.0;
-const double p0 = beta * b0 * b0 / 2.0;
-const double v0 = sqrt(b0 * b0 / rho0 + gamma_mhd * p0 / rho0);
+const double p0 = b0 * b0 / 2.0;
+
+const double eta0 = 1.0 / 1000.0;
+const double eta1 = 1.0 / 60.0;
 
 const double xmin = 0.0;
-const double xmax = 2.0 * PI * shear_thickness / 0.4;
-const double dx = shear_thickness / 32.0;
+const double xmax = 100.0;
+const double dx = sheat_thickness / 10.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
-const double ymax = 2.0 * 10.0 * shear_thickness;
-const double dy = shear_thickness / 32.0;
+const double ymax = 20.0;
+const double dy = sheat_thickness / 10.0;
 const int ny = int((ymax - ymin) / dy);
-
-const double xCenter = (xmax - xmin) / 2.0;
-const double yCenter = (ymax - ymin) / 2.0;
 
 const double CFL = 0.7;
 double dt = 0.0;
-const int totalStep = 30000;
+const int totalStep = 10000;
 const int recordStep = 100;
 double totalTime = 0.0;
 
@@ -55,20 +54,22 @@ __constant__ double device_ymin;
 __constant__ double device_ymax;
 __constant__ int device_ny;
 
-__constant__ double device_xCenter;
-__constant__ double device_yCenter;
-
 __constant__ double device_CFL;
 __constant__ double device_gamma_mhd;
 
 __device__ double device_dt;
 
-__constant__ double device_shear_thickness;
-__constant__ double device_beta;
+__constant__ double device_sheat_thickness;
+__constant__ double device_betaUpstream;
 __constant__ double device_rho0;
 __constant__ double device_b0;
 __constant__ double device_p0;
-__constant__ double device_v0;
+
+__constant__ double device_eta0;
+__constant__ double device_eta1;
+
+__constant__ double device_xPosition = xmax / 2.0;
+__constant__ double device_yPosition = ymax / 2.0;
 
 
 __global__ void initializeU_kernel(ConservationParameter* U) 
@@ -78,8 +79,20 @@ __global__ void initializeU_kernel(ConservationParameter* U)
 
     if (i < device_nx && j < device_ny) {
         double rho, u, v, w, bX, bY, bZ, e, p;
+        double x = i * device_dx;
+        double y = j * device_dy;
         
-        
+        rho = device_rho0 * (device_betaUpstream + pow(cosh((y - 0.5 * device_ymax) / device_sheat_thickness), 2));
+        u = 0.0;
+        v = 0.0;
+        w = 0.0;
+        bX = device_b0 * tanh((y - 0.5 * device_ymax) / device_sheat_thickness);
+        bY = 0.0;
+        bZ = 0.0;
+        p = device_p0 * (device_betaUpstream + pow(cosh((y - 0.5 * device_ymax) / device_sheat_thickness), 2));
+        e = p / (device_gamma_mhd - 1.0)
+          + 0.5 * rho * (u * u + v * v + w * w)
+          + 0.5 * (bX * bX + bY * bY + bZ * bZ);
         
         U[j + i * device_ny].rho  = rho;
         U[j + i * device_ny].rhoU = rho * u;
@@ -94,20 +107,55 @@ __global__ void initializeU_kernel(ConservationParameter* U)
 
 void ResistiveMHD2D::initializeU()
 {
-    cudaMemcpyToSymbol(device_xCenter, &xCenter, sizeof(double));
-    cudaMemcpyToSymbol(device_yCenter, &yCenter, sizeof(double));
-    cudaMemcpyToSymbol(device_shear_thickness, &shear_thickness, sizeof(double));
-    cudaMemcpyToSymbol(device_beta, &beta, sizeof(double));
+    cudaMemcpyToSymbol(device_sheat_thickness, &sheat_thickness, sizeof(double));
+    cudaMemcpyToSymbol(device_betaUpstream, &betaUpstream, sizeof(double));
     cudaMemcpyToSymbol(device_rho0, &rho0, sizeof(double));
     cudaMemcpyToSymbol(device_b0, &b0, sizeof(double));
     cudaMemcpyToSymbol(device_p0, &p0, sizeof(double));
-    cudaMemcpyToSymbol(device_v0, &v0, sizeof(double));
+    cudaMemcpyToSymbol(device_eta0, &eta0, sizeof(double));
+    cudaMemcpyToSymbol(device_eta1, &eta1, sizeof(double));
 
     dim3 threadsPerBlock(16, 16);
     dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
                        (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     initializeU_kernel<<<blocksPerGrid, threadsPerBlock>>>(thrust::raw_pointer_cast(U.data()));
+
+    cudaDeviceSynchronize();
+}
+
+
+
+__global__ void addResistiveTermToFluxF_kernel(
+    ConservationParameter* U, Flux* flux)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (i < device_nx && j < device_ny) {
+        double xPosition = i * device_dx, yPosition = j * device_dy;
+        double bXPlus1, bXMinus1, bYPlus1, bYMinus1, bZPlus1, bZMinus1;
+        double currentX, currentY, currentZ;
+        double eta = device_eta1 
+                   + (device_eta1 - device_eta0)
+                   * pow(cosh(sqrt(pow(xPosition - 0.5 * (device_xmax - device_xmin), 2) + pow(yPosition, 2))), -2);
+  
+        
+    }
+}
+
+void FluxSolver::addResistiveTermToFluxF(
+    const thrust::device_vector<ConservationParameter>& U
+)
+{
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                       (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    addResistiveTermToFluxF_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(U.data()), 
+        thrust::raw_pointer_cast(flux.data())
+    );
 
     cudaDeviceSynchronize();
 }
