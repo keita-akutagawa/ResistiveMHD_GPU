@@ -100,31 +100,33 @@ void symmetricBoundaryY2nd_kernel(ConservationParameter* U)
 
         U[0 + i * device_ny].bY   = U[4 + i * device_ny].bY;
         U[1 + i * device_ny].bY   = U[3 + i * device_ny].bY;
+        U[2 + i * device_ny].bY   = 0.0;
 
-        U[device_ny-1 + i * device_ny].rho  = U[device_ny-6 + i * device_ny].rho;
-        U[device_ny-1 + i * device_ny].rhoU = U[device_ny-6 + i * device_ny].rhoU;
-        U[device_ny-1 + i * device_ny].rhoV = U[device_ny-6 + i * device_ny].rhoV;
-        U[device_ny-1 + i * device_ny].rhoW = U[device_ny-6 + i * device_ny].rhoW;
-        U[device_ny-1 + i * device_ny].bX   = U[device_ny-6 + i * device_ny].bX;
-        U[device_ny-1 + i * device_ny].bZ   = U[device_ny-6 + i * device_ny].bZ;
-        U[device_ny-1 + i * device_ny].e    = U[device_ny-6 + i * device_ny].e;
-        U[device_ny-2 + i * device_ny].rho  = U[device_ny-5 + i * device_ny].rho;
-        U[device_ny-2 + i * device_ny].rhoU = U[device_ny-5 + i * device_ny].rhoU;
-        U[device_ny-2 + i * device_ny].rhoV = U[device_ny-5 + i * device_ny].rhoV;
-        U[device_ny-2 + i * device_ny].rhoW = U[device_ny-5 + i * device_ny].rhoW;
-        U[device_ny-2 + i * device_ny].bX   = U[device_ny-5 + i * device_ny].bX;
-        U[device_ny-2 + i * device_ny].bZ   = U[device_ny-5 + i * device_ny].bZ;
-        U[device_ny-2 + i * device_ny].e    = U[device_ny-5 + i * device_ny].e;
-        U[device_ny-3 + i * device_ny].rho  = U[device_ny-4 + i * device_ny].rho;
-        U[device_ny-3 + i * device_ny].rhoU = U[device_ny-4 + i * device_ny].rhoU;
-        U[device_ny-3 + i * device_ny].rhoV = U[device_ny-4 + i * device_ny].rhoV;
-        U[device_ny-3 + i * device_ny].rhoW = U[device_ny-4 + i * device_ny].rhoW;
-        U[device_ny-3 + i * device_ny].bX   = U[device_ny-4 + i * device_ny].bX;
-        U[device_ny-3 + i * device_ny].bZ   = U[device_ny-4 + i * device_ny].bZ;
-        U[device_ny-3 + i * device_ny].e    = U[device_ny-4 + i * device_ny].e;
+        U[device_ny - 1 + i * device_ny].rho  = U[device_ny - 6 + i * device_ny].rho;
+        U[device_ny - 1 + i * device_ny].rhoU = U[device_ny - 6 + i * device_ny].rhoU;
+        U[device_ny - 1 + i * device_ny].rhoV = U[device_ny - 6 + i * device_ny].rhoV;
+        U[device_ny - 1 + i * device_ny].rhoW = U[device_ny - 6 + i * device_ny].rhoW;
+        U[device_ny - 1 + i * device_ny].bX   = U[device_ny - 6 + i * device_ny].bX;
+        U[device_ny - 1 + i * device_ny].bZ   = U[device_ny - 6 + i * device_ny].bZ;
+        U[device_ny - 1 + i * device_ny].e    = U[device_ny - 6 + i * device_ny].e;
+        U[device_ny - 2 + i * device_ny].rho  = U[device_ny - 5 + i * device_ny].rho;
+        U[device_ny - 2 + i * device_ny].rhoU = U[device_ny - 5 + i * device_ny].rhoU;
+        U[device_ny - 2 + i * device_ny].rhoV = U[device_ny - 5 + i * device_ny].rhoV;
+        U[device_ny - 2 + i * device_ny].rhoW = U[device_ny - 5 + i * device_ny].rhoW;
+        U[device_ny - 2 + i * device_ny].bX   = U[device_ny - 5 + i * device_ny].bX;
+        U[device_ny - 2 + i * device_ny].bZ   = U[device_ny - 5 + i * device_ny].bZ;
+        U[device_ny - 2 + i * device_ny].e    = U[device_ny - 5 + i * device_ny].e;
+        U[device_ny - 3 + i * device_ny].rho  = U[device_ny - 4 + i * device_ny].rho;
+        U[device_ny - 3 + i * device_ny].rhoU = U[device_ny - 4 + i * device_ny].rhoU;
+        U[device_ny - 3 + i * device_ny].rhoV = U[device_ny - 4 + i * device_ny].rhoV;
+        U[device_ny - 3 + i * device_ny].rhoW = U[device_ny - 4 + i * device_ny].rhoW;
+        U[device_ny - 3 + i * device_ny].bX   = U[device_ny - 4 + i * device_ny].bX;
+        U[device_ny - 3 + i * device_ny].bZ   = U[device_ny - 4 + i * device_ny].bZ;
+        U[device_ny - 3 + i * device_ny].e    = U[device_ny - 4 + i * device_ny].e;
 
-        U[device_ny-1 + i * device_ny].bY   = U[device_ny-5 + i * device_ny].bY;
-        U[device_ny-2 + i * device_ny].bY   = U[device_ny-4 + i * device_ny].bY;
+        U[device_ny - 1 + i * device_ny].bY   = U[device_ny - 5 + i * device_ny].bY;
+        U[device_ny - 2 + i * device_ny].bY   = U[device_ny - 4 + i * device_ny].bY;
+        U[device_ny - 3 + i * device_ny].bY   = 0.0;
     }
 }
 

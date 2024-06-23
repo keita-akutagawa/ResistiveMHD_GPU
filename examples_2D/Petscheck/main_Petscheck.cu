@@ -37,8 +37,8 @@ const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
 double dt = 0.0;
-const int totalStep = 10000;
-const int recordStep = 100;
+const int totalStep = 1000;
+const int recordStep = 10;
 double totalTime = 0.0;
 
 __constant__ double device_EPS;
@@ -78,14 +78,14 @@ __global__ void initializeU_kernel(ConservationParameter* U)
         double rho, u, v, w, bX, bY, bZ, e, p;
         double y = j * device_dy;
         
-        rho = device_rho0 * (device_betaUpstream + pow(cosh((y - 0.5 * device_ymax) / device_sheat_thickness), 2));
+        rho = device_rho0 * (device_betaUpstream + pow(cosh((y - 0.5 * device_ymax) / device_sheat_thickness), -2));
         u = 0.0;
         v = 0.0;
         w = 0.0;
         bX = device_b0 * tanh((y - 0.5 * device_ymax) / device_sheat_thickness);
         bY = 0.0;
         bZ = 0.0;
-        p = device_p0 * (device_betaUpstream + pow(cosh((y - 0.5 * device_ymax) / device_sheat_thickness), 2));
+        p = device_p0 * (device_betaUpstream + pow(cosh((y - 0.5 * device_ymax) / device_sheat_thickness), -2));
         e = p / (device_gamma_mhd - 1.0)
           + 0.5 * rho * (u * u + v * v + w * w)
           + 0.5 * (bX * bX + bY * bY + bZ * bZ);
