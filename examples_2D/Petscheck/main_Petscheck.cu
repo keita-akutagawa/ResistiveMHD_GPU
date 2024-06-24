@@ -164,13 +164,13 @@ __global__ void addResistiveTermToFluxF_kernel(
 
         jY = -(U[j + (i + 2) * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0 * device_dx);
         jZ = (U[j + (i + 2) * device_ny].bY - U[j + i * device_ny].bY) / (2.0 * device_dx)
-                 - (U[j + 2 + i * device_ny].bX - U[j + i * device_ny].bX) / (2.0 * device_dy);
+           - (U[j + 2 + i * device_ny].bX - U[j + i * device_ny].bX) / (2.0 * device_dy);
         
         eta = getEta(xPositionPlus1, yPosition);
         etaJYPlus1 = eta * jY; 
         etaJZPlus1 = eta * jZ;
-        etaJYBZ = etaJY * U[j + (i + 1) * device_ny].bZ;
-        etaJZBY = etaJZ * U[j + (i + 1) * device_ny].bY;
+        etaJYBZPlus1 = etaJY * U[j + (i + 1) * device_ny].bZ;
+        etaJZBYPlus1 = etaJZ * U[j + (i + 1) * device_ny].bY;
   
         flux[j + i * device_ny].f5 -= 0.5 * (etaJZ + etaJZPlus1);
         flux[j + i * device_ny].f6 += 0.5 * (etaJY + etaJYPlus1);
