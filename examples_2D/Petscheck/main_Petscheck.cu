@@ -37,8 +37,8 @@ const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
 double dt = 0.0;
-const int totalStep = 1000;
-const int recordStep = 10;
+const int totalStep = 10000;
+const int recordStep = 100;
 double totalTime = 0.0;
 
 __constant__ double device_EPS;
@@ -145,9 +145,12 @@ __global__ void addResistiveTermToFluxF_kernel(
         currentZ = (bYPlus1 - bYMinus1) / (2.0 * device_dx)
                  - (bXPlus1 - bXMinus1) / (2.0 * device_dy);
         
-        eta = device_eta1 
+        eta = device_eta0 
             + (device_eta1 - device_eta0)
-            * pow(cosh(sqrt(pow(xPosition - 0.5 * (device_xmax - device_xmin), 2) + pow(yPosition, 2))), -2);
+            * pow(cosh(sqrt(
+                pow(xPosition - 0.5 * (device_xmax - device_xmin), 2)
+              + pow(yPosition - 0.5 * (device_ymax - device_ymin), 2)
+            )), -2);
   
         flux[j + i * device_ny].f5 -= eta * currentZ;
         flux[j + i * device_ny].f6 += eta * currentY;
@@ -199,9 +202,12 @@ __global__ void addResistiveTermToFluxG_kernel(
         currentZ = (bYPlus1 - bYMinus1) / (2.0 * device_dx)
                  - (bXPlus1 - bXMinus1) / (2.0 * device_dy);
         
-        eta = device_eta1 
+        eta = device_eta0 
             + (device_eta1 - device_eta0)
-            * pow(cosh(sqrt(pow(xPosition - 0.5 * (device_xmax - device_xmin), 2) + pow(yPosition, 2))), -2);
+            * pow(cosh(sqrt(
+                pow(xPosition - 0.5 * (device_xmax - device_xmin), 2)
+              + pow(yPosition - 0.5 * (device_ymax - device_ymin), 2
+                ))), -2);
   
         flux[j + i * device_ny].f4 += eta * currentZ;
         flux[j + i * device_ny].f6 -= eta * currentX;
