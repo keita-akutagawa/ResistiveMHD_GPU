@@ -122,7 +122,7 @@ void ResistiveMHD2D::initializeU()
 
 
 __device__
-double getEta(double& xPosition, double& yPosition)
+inline double getEta(double& xPosition, double& yPosition)
 {
     double eta;
 
