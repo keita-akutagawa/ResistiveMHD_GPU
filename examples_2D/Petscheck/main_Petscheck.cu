@@ -143,32 +143,39 @@ __global__ void addResistiveTermToFluxF_kernel(
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if ((0 < i) && (i < device_nx - 1) && (0 < j) && (j < device_ny - 1)) {
+    if ((0 < i) && (i < device_nx - 2) && (0 < j) && (j < device_ny - 2)) {
         double xPosition = i * device_dx, yPosition = j * device_dy;
+        double xPositionPlus1 = (i + 1) * device_dx;
 
-        double bXPlus1, bXMinus1, bYPlus1, bY, bYMinus1, bZPlus1, bZ, bZMinus1;
-        double currentY, currentZ;
+        double jY, jZ;
         double eta;
+        double etaJY, etaJYPlus1, etaJZ, etaJZPlus1;
+        double etaJYBZ, etaJYBZPlus1, etaJZBY, etaJZBYPlus1;
 
-        bZPlus1 = U[j + (i + 1) * device_ny].bZ;
-        bZMinus1 = U[j + (i - 1) * device_ny].bZ;
-        currentY = -(bZPlus1 - bZMinus1) / (2.0 * device_dx);
-
-        bYPlus1 = U[j + (i + 1) * device_ny].bY;
-        bYMinus1 = U[j + (i - 1) * device_ny].bY;
-        bXPlus1 = U[j + 1 + i * device_ny].bX;
-        bXMinus1 = U[j - 1 + i * device_ny].bX;
-        currentZ = (bYPlus1 - bYMinus1) / (2.0 * device_dx)
-                 - (bXPlus1 - bXMinus1) / (2.0 * device_dy);
+        jY = -(U[j + (i + 1) * device_ny].bZ - U[j + (i - 1) * device_ny].bZ) / (2.0 * device_dx);
+        jZ = (U[j + (i + 1) * device_ny].bY - U[j + (i - 1) * device_ny].bY) / (2.0 * device_dx)
+           - (U[j + 1 + i * device_ny].bX - U[j - 1 + i * device_ny].bX) / (2.0 * device_dy);
         
         eta = getEta(xPosition, yPosition);
-  
-        flux[j + i * device_ny].f5 -= eta * currentZ;
-        flux[j + i * device_ny].f6 += eta * currentY;
+        etaJY = eta * jY; 
+        etaJZ = eta * jZ;
+        etaJYBZ = etaJY * U[j + i * device_ny].bZ;
+        etaJZBY = etaJZ * U[j + i * device_ny].bY;
 
-        bY = U[j + i * device_ny].bY;
-        bZ = U[j + i * device_ny].bZ;
-        flux[j + i * device_ny].f7 += eta * (currentY * bZ - currentZ * bY);
+        jY = -(U[j + (i + 2) * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0 * device_dx);
+        jZ = (U[j + (i + 2) * device_ny].bY - U[j + i * device_ny].bY) / (2.0 * device_dx)
+                 - (U[j + 2 + i * device_ny].bX - U[j + i * device_ny].bX) / (2.0 * device_dy);
+        
+        eta = getEta(xPositionPlus1, yPosition);
+        etaJYPlus1 = eta * jY; 
+        etaJZPlus1 = eta * jZ;
+        etaJYBZ = etaJY * U[j + (i + 1) * device_ny].bZ;
+        etaJZBY = etaJZ * U[j + (i + 1) * device_ny].bY;
+  
+        flux[j + i * device_ny].f5 -= 0.5 * (etaJZ + etaJZPlus1);
+        flux[j + i * device_ny].f6 += 0.5 * (etaJY + etaJYPlus1);
+        flux[j + i * device_ny].f7 += 0.5 * (etaJYBZ + etaJYBZPlus1)
+                                    - 0.5 * (etaJZBY + etaJZBYPlus1);
     }
 }
 
@@ -195,32 +202,40 @@ __global__ void addResistiveTermToFluxG_kernel(
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if ((0 < i) && (i < device_nx - 1) && (0 < j) && (j < device_ny - 1)) {
+    if ((0 < i) && (i < device_nx - 2) && (0 < j) && (j < device_ny - 2)) {
         double xPosition = i * device_dx, yPosition = j * device_dy;
+        double yPositionPlus1 = (j + 1) * device_dy;
 
-        double bXPlus1, bX, bXMinus1, bYPlus1, bYMinus1, bZPlus1, bZ, bZMinus1;
-        double currentX, currentZ;
+
+        double jX, jZ;
         double eta;
+        double etaJX, etaJXPlus1, etaJZ, etaJZPlus1;
+        double etaJZBX, etaJZBXPlus1, etaJXBZ, etaJXBZPlus1;
 
-        bZPlus1 = U[j + 1 + i * device_ny].bZ;
-        bZMinus1 = U[j - 1 + i * device_ny].bZ;
-        currentX = (bZPlus1 - bZMinus1) / (2.0 * device_dy);
-
-        bYPlus1 = U[j + (i + 1) * device_ny].bY;
-        bYMinus1 = U[j + (i - 1) * device_ny].bY;
-        bXPlus1 = U[j + 1 + i * device_ny].bX;
-        bXMinus1 = U[j - 1 + i * device_ny].bX;
-        currentZ = (bYPlus1 - bYMinus1) / (2.0 * device_dx)
-                 - (bXPlus1 - bXMinus1) / (2.0 * device_dy);
+        jX = (U[j + 1 + i * device_ny].bZ - U[j - 1 + i * device_ny].bZ) / (2.0 * device_dy);
+        jZ = (U[j + (i + 1) * device_ny].bY - U[j + (i - 1) * device_ny].bY) / (2.0 * device_dx)
+           - (U[j + 1 + i * device_ny].bX - U[j - 1 + i * device_ny].bX) / (2.0 * device_dy);
         
         eta = getEta(xPosition, yPosition);
-  
-        flux[j + i * device_ny].f4 += eta * currentZ;
-        flux[j + i * device_ny].f6 -= eta * currentX;
+        etaJX = eta * jX;
+        etaJZ = eta * jZ;
+        etaJXBZ = etaJX * U[j + i * device_ny].bZ;
+        etaJZBX = etaJZ * U[j + i * device_ny].bX;
 
-        bX = U[j + i * device_ny].bX;
-        bZ = U[j + i * device_ny].bZ;
-        flux[j + i * device_ny].f7 += eta * (currentZ * bX - currentX * bZ);
+        jX = (U[j + 2 + i * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0 * device_dy);
+        jZ = (U[j + (i + 2) * device_ny].bY - U[j + i * device_ny].bY) / (2.0 * device_dx)
+           - (U[j + 2 + i * device_ny].bX - U[j + i * device_ny].bX) / (2.0 * device_dy);
+        
+        eta = getEta(xPosition, yPositionPlus1);
+        etaJXPlus1 = eta * jX;
+        etaJZPlus1 = eta * jZ;
+        etaJXBZPlus1 = etaJX * U[j + 1 + i * device_ny].bZ;
+        etaJZBXPlus1 = etaJZ * U[j + 1 + i * device_ny].bX;
+  
+        flux[j + i * device_ny].f4 += 0.5 * (etaJZ + etaJZPlus1);
+        flux[j + i * device_ny].f6 -= 0.5 * (etaJX + etaJXPlus1);
+        flux[j + i * device_ny].f7 += 0.5 * (etaJZBX + etaJZBXPlus1)
+                                    - 0.5 * (etaJXBZ + etaJXBZPlus1);
     }
 }
 
