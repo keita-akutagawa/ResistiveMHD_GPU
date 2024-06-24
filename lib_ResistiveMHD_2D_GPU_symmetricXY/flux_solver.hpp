@@ -1,3 +1,4 @@
+#include <thrust/device_vector.h>
 #include "const.hpp"
 #include "hlld.hpp"
 
@@ -26,6 +27,9 @@ public:
     virtual void addResistiveTermToFluxG(
         const thrust::device_vector<ConservationParameter>& U
     );
+
+    virtual double getEta(double& xPosition, double& yPosition);
+
 };
 
 
