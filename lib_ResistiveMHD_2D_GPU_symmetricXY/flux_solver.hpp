@@ -28,8 +28,6 @@ public:
         const thrust::device_vector<ConservationParameter>& U
     );
 
-    double getEta(double& xPosition, double& yPosition);
-
 };
 
 
