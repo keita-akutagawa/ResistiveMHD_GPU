@@ -206,7 +206,6 @@ __global__ void addResistiveTermToFluxG_kernel(
         double xPosition = i * device_dx, yPosition = j * device_dy;
         double yPositionPlus1 = (j + 1) * device_dy;
 
-
         double jX, jZ;
         double eta;
         double etaJX, etaJXPlus1, etaJZ, etaJZPlus1;
