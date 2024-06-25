@@ -23,17 +23,17 @@ const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
 
-const double eta0 = 1.0 / 1000.0;
+const double eta0 = 1.0 / 100.0;
 const double eta1 = 0.0;
 const double triggerRatio = 0.1;
 
 const double xmin = 0.0;
 const double xmax = 100.0;
-const double dx = sheat_thickness / 10.0;
+const double dx = sheat_thickness / 20.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
 const double ymax = 20.0;
-const double dy = sheat_thickness / 10.0;
+const double dy = sheat_thickness / 20.0;
 const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
@@ -135,12 +135,7 @@ inline double getEta(double& xPosition, double& yPosition)
 {
     double eta;
 
-    eta = device_eta0 
-        + (device_eta1 - device_eta0)
-        * pow(cosh(sqrt(
-          pow(xPosition - 0.5 * (device_xmax - device_xmin), 2)
-        + pow(yPosition - 0.5 * (device_ymax - device_ymin), 2
-        ))), -2);
+    eta = device_eta0;
     
     return eta;
 }
