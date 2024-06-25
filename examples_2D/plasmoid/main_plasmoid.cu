@@ -23,7 +23,7 @@ const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
 
-const double eta0 = 1.0 / 100.0;
+const double eta0 = 1.0 / 1000.0;
 const double triggerRatio = 0.05;
 
 const double xmin = 0.0;
