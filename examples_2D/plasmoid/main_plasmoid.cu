@@ -25,15 +25,15 @@ const double p0 = b0 * b0 / 2.0;
 
 const double eta0 = 1.0 / 100.0;
 const double eta1 = 0.0;
-const double triggerRatio = 0.1;
+const double triggerRatio = 0.05;
 
 const double xmin = 0.0;
 const double xmax = 100.0;
-const double dx = sheat_thickness / 20.0;
+const double dx = sheat_thickness / 10.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
 const double ymax = 20.0;
-const double dy = sheat_thickness / 20.0;
+const double dy = sheat_thickness / 10.0;
 const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
@@ -79,18 +79,18 @@ __global__ void initializeU_kernel(ConservationParameter* U)
 
     if (i < device_nx && j < device_ny) {
         double rho, u, v, w, bX, bY, bZ, e, p;
-        double y = j * device_dy;
+        double x = i * device_dx, y = j * device_dy;
         
         rho = device_rho0 * (device_betaUpstream + pow(cosh((y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness), -2));
         u = 0.0;
         v = 0.0;
         w = 0.0;
         bX = device_b0 * tanh((y - 0.5 * device_ymax) / device_sheat_thickness)
-           - device_b0 * device_triggerRatio * (j * device_dy - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness
-           * exp(-(pow((i * device_dx - 0.5 * (device_xmax - device_xmin)), 2) + pow((j * device_dy - 0.5 * (device_ymax - device_ymin)), 2))
+           - device_b0 * device_triggerRatio * (y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness
+           * exp(-(pow((x - 0.5 * (device_xmax - device_xmin)), 2) + pow((y - 0.5 * (device_ymax - device_ymin)), 2))
            / pow(2.0 * device_sheat_thickness, 2));
-        bY = device_b0 * device_triggerRatio * (i * device_dx - 0.5 * (device_xmax - device_xmin)) / device_sheat_thickness
-           * exp(-(pow((i * device_dx - 0.5 * (device_xmax - device_xmin)), 2) + pow((j * device_dy - 0.5 * (device_ymax - device_ymin)), 2))
+        bY = device_b0 * device_triggerRatio * (x - 0.5 * (device_xmax - device_xmin)) / device_sheat_thickness
+           * exp(-(pow((x - 0.5 * (device_xmax - device_xmin)), 2) + pow((y - 0.5 * (device_ymax - device_ymin)), 2))
            / pow(2.0 * device_sheat_thickness, 2));
         bZ = 0.0;
         p = device_p0 * (device_betaUpstream + pow(cosh((y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness), -2));
@@ -168,7 +168,7 @@ __global__ void addResistiveTermToFluxF_kernel(
 
         jY = -(U[j + (i + 2) * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0 * device_dx);
         jZ = (U[j + (i + 2) * device_ny].bY - U[j + i * device_ny].bY) / (2.0 * device_dx)
-           - (U[j + 2 + i * device_ny].bX - U[j + i * device_ny].bX) / (2.0 * device_dy);
+           - (U[j + 1 + (i + 1) * device_ny].bX - U[j - 1 + (i + 1) * device_ny].bX) / (2.0 * device_dy);
         
         eta = getEta(xPositionPlus1, yPosition);
         etaJYPlus1 = eta * jY; 
@@ -226,7 +226,7 @@ __global__ void addResistiveTermToFluxG_kernel(
         etaJZBX = etaJZ * U[j + i * device_ny].bX;
 
         jX = (U[j + 2 + i * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0 * device_dy);
-        jZ = (U[j + (i + 2) * device_ny].bY - U[j + i * device_ny].bY) / (2.0 * device_dx)
+        jZ = (U[j + 1 + (i + 1) * device_ny].bY - U[j + 1 + (i - 1) * device_ny].bY) / (2.0 * device_dx)
            - (U[j + 2 + i * device_ny].bX - U[j + i * device_ny].bX) / (2.0 * device_dy);
         
         eta = getEta(xPosition, yPositionPlus1);
