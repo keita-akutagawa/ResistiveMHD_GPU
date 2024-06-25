@@ -24,7 +24,6 @@ const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
 
 const double eta0 = 1.0 / 100.0;
-const double eta1 = 0.0;
 const double triggerRatio = 0.05;
 
 const double xmin = 0.0;
@@ -67,7 +66,6 @@ __constant__ double device_b0;
 __constant__ double device_p0;
 
 __constant__ double device_eta0;
-__constant__ double device_eta1;
 
 __constant__ double device_triggerRatio;
 
@@ -117,7 +115,6 @@ void ResistiveMHD2D::initializeU()
     cudaMemcpyToSymbol(device_b0, &b0, sizeof(double));
     cudaMemcpyToSymbol(device_p0, &p0, sizeof(double));
     cudaMemcpyToSymbol(device_eta0, &eta0, sizeof(double));
-    cudaMemcpyToSymbol(device_eta1, &eta1, sizeof(double));
     cudaMemcpyToSymbol(device_triggerRatio, &triggerRatio, sizeof(double));
 
     dim3 threadsPerBlock(16, 16);
