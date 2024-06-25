@@ -142,3 +142,4 @@ void Boundary::symmetricBoundaryY2nd(
 
     cudaDeviceSynchronize();
 }
+

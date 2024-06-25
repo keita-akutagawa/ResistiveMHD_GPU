@@ -10,7 +10,7 @@
 
 std::string directoryname = "results";
 std::string filenameWithoutStep = "plasmoid";
-std::ofstream logfile("log_plasmoid.txt");
+std::ofstream logfile("results/log_plasmoid.txt");
 
 const double EPS = 1e-20;
 const double PI = 3.141592653589793;
@@ -23,21 +23,21 @@ const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
 
-const double eta0 = 1.0 / 1000.0;
-const double triggerRatio = 0.05;
+const double eta0 = 1.0 / 250.0;
+const double triggerRatio = 0.1;
 
 const double xmin = 0.0;
-const double xmax = 100.0;
-const double dx = sheat_thickness / 10.0;
+const double xmax = 200.0;
+const double dx = sheat_thickness / 20.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
 const double ymax = 20.0;
-const double dy = sheat_thickness / 10.0;
+const double dy = sheat_thickness / 20.0;
 const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
 double dt = 0.0;
-const int totalStep = 10000;
+const int totalStep = 20000;
 const int recordStep = 100;
 double totalTime = 0.0;
 
@@ -75,9 +75,11 @@ __global__ void initializeU_kernel(ConservationParameter* U)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (i < device_nx && j < device_ny) {
+    if (i < device_nx - 1 && j < device_ny - 1) {
         double rho, u, v, w, bX, bY, bZ, e, p;
+        double bXPlus1, bYPlus1; 
         double x = i * device_dx, y = j * device_dy;
+        double xPlus1 = (i + 1) * device_dx, yPlus1 = (j + 1) * device_dy;
         
         rho = device_rho0 * (device_betaUpstream + pow(cosh((y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness), -2));
         u = 0.0;
@@ -87,9 +89,18 @@ __global__ void initializeU_kernel(ConservationParameter* U)
            - device_b0 * device_triggerRatio * (y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness
            * exp(-(pow((x - 0.5 * (device_xmax - device_xmin)), 2) + pow((y - 0.5 * (device_ymax - device_ymin)), 2))
            / pow(2.0 * device_sheat_thickness, 2));
+        bXPlus1 = device_b0 * tanh((y - 0.5 * device_ymax) / device_sheat_thickness)
+                - device_b0 * device_triggerRatio * (y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness
+                * exp(-(pow((xPlus1 - 0.5 * (device_xmax - device_xmin)), 2) + pow((y - 0.5 * (device_ymax - device_ymin)), 2))
+                / pow(2.0 * device_sheat_thickness, 2));
+        bX = 0.5 * (bX + bXPlus1);
         bY = device_b0 * device_triggerRatio * (x - 0.5 * (device_xmax - device_xmin)) / device_sheat_thickness
            * exp(-(pow((x - 0.5 * (device_xmax - device_xmin)), 2) + pow((y - 0.5 * (device_ymax - device_ymin)), 2))
            / pow(2.0 * device_sheat_thickness, 2));
+        bYPlus1 = device_b0 * device_triggerRatio * (x - 0.5 * (device_xmax - device_xmin)) / device_sheat_thickness
+                * exp(-(pow((x - 0.5 * (device_xmax - device_xmin)), 2) + pow((yPlus1 - 0.5 * (device_ymax - device_ymin)), 2))
+                / pow(2.0 * device_sheat_thickness, 2));
+        bY = 0.5 * (bY + bYPlus1);
         bZ = 0.0;
         p = device_p0 * (device_betaUpstream + pow(cosh((y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness), -2));
         e = p / (device_gamma_mhd - 1.0)

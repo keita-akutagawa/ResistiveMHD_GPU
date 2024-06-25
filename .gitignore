@@ -11,3 +11,5 @@ program
 *.o
 log*
 googletest/
+*.bin
+
