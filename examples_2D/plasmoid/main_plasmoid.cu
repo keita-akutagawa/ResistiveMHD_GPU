@@ -23,7 +23,7 @@ const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
 
-const double eta0 = 1.0 / 250.0;
+const double eta0 = 1.0 / 500.0;
 const double triggerRatio = 0.1;
 
 const double xmin = 0.0;
@@ -37,7 +37,7 @@ const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
 double dt = 0.0;
-const int totalStep = 20000;
+const int totalStep = 50000;
 const int recordStep = 100;
 double totalTime = 0.0;
 
@@ -135,6 +135,9 @@ void ResistiveMHD2D::initializeU()
     initializeU_kernel<<<blocksPerGrid, threadsPerBlock>>>(thrust::raw_pointer_cast(U.data()));
 
     cudaDeviceSynchronize();
+
+    boundary.symmetricBoundaryX2nd(U);
+    boundary.symmetricBoundaryY2nd(U);
 }
 
 
