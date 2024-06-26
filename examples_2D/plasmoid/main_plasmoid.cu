@@ -23,8 +23,8 @@ const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
 
-const double eta0 = 1.0 / 50.0;
-const double eta1 = 1.0 / 1000.0;
+const double eta0 = 1.0 / 100.0;
+const double eta1 = 1.0 / 500.0;
 const double triggerRatio = 0.0;
 
 const double xmin = 0.0;
@@ -155,7 +155,7 @@ inline double getEta(double& xPosition, double& yPosition)
           pow(xPosition - 0.5 * (device_xmax - device_xmin), 2)
         + pow(yPosition - 0.5 * (device_ymax - device_ymin), 2)
         )), -2)
-        * exp(-(static_cast<double>(device_step) / 100.0))
+        * exp(-(static_cast<double>(device_step) / 1000.0))
         + device_eta1;
     
     return eta;
