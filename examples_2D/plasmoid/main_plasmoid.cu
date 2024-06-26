@@ -23,16 +23,17 @@ const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
 
-const double eta0 = 1.0 / 500.0;
-const double triggerRatio = 0.1;
+const double eta0 = 1.0 / 60.0;
+const double eta1 = 1.0 / 250.0;
+const double triggerRatio = 0.0;
 
 const double xmin = 0.0;
 const double xmax = 200.0;
-const double dx = sheat_thickness / 20.0;
+const double dx = sheat_thickness / 10.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
 const double ymax = 20.0;
-const double dy = sheat_thickness / 20.0;
+const double dy = sheat_thickness / 10.0;
 const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
@@ -66,8 +67,12 @@ __constant__ double device_b0;
 __constant__ double device_p0;
 
 __constant__ double device_eta0;
+__constant__ double device_eta1;
 
 __constant__ double device_triggerRatio;
+
+int step;
+__device__ int device_step;
 
 
 __global__ void initializeU_kernel(ConservationParameter* U) 
@@ -75,34 +80,33 @@ __global__ void initializeU_kernel(ConservationParameter* U)
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (i < device_nx - 1 && j < device_ny - 1) {
+    if (i < device_nx && j < device_ny) {
         double rho, u, v, w, bX, bY, bZ, e, p;
-        double bXPlus1, bYPlus1; 
+        double bXHalf, bYHalf;
         double x = i * device_dx, y = j * device_dy;
-        double xPlus1 = (i + 1) * device_dx, yPlus1 = (j + 1) * device_dy;
+        double xHalf = (i + 0.5) * device_dx, yHalf = (j + 0.5) * device_dy;
+        double xCenter = 0.5 * (device_xmax - device_xmin), yCenter = 0.5 * (device_ymax - device_ymin);
         
-        rho = device_rho0 * (device_betaUpstream + pow(cosh((y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness), -2));
+        rho = device_rho0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheat_thickness), -2));
         u = 0.0;
         v = 0.0;
         w = 0.0;
-        bX = device_b0 * tanh((y - 0.5 * device_ymax) / device_sheat_thickness)
-           - device_b0 * device_triggerRatio * (y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness
-           * exp(-(pow((x - 0.5 * (device_xmax - device_xmin)), 2) + pow((y - 0.5 * (device_ymax - device_ymin)), 2))
+        bX = device_b0 * tanh((y - yCenter) / device_sheat_thickness)
+           - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
+           * exp(-(pow(x - xCenter, 2) + pow(y - yCenter, 2))
            / pow(2.0 * device_sheat_thickness, 2));
-        bXPlus1 = device_b0 * tanh((y - 0.5 * device_ymax) / device_sheat_thickness)
-                - device_b0 * device_triggerRatio * (y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness
-                * exp(-(pow((xPlus1 - 0.5 * (device_xmax - device_xmin)), 2) + pow((y - 0.5 * (device_ymax - device_ymin)), 2))
-                / pow(2.0 * device_sheat_thickness, 2));
-        bX = 0.5 * (bX + bXPlus1);
-        bY = device_b0 * device_triggerRatio * (x - 0.5 * (device_xmax - device_xmin)) / device_sheat_thickness
-           * exp(-(pow((x - 0.5 * (device_xmax - device_xmin)), 2) + pow((y - 0.5 * (device_ymax - device_ymin)), 2))
+        bXHalf = device_b0 * tanh((y - yCenter) / device_sheat_thickness)
+               - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
+               * exp(-(pow(xHalf - xCenter, 2) + pow(y - yCenter, 2))
+               / pow(2.0 * device_sheat_thickness, 2));
+        bY = device_b0 * device_triggerRatio * (x - xCenter) / device_sheat_thickness
+           * exp(-(pow(x - xCenter, 2) + pow(y - yCenter, 2))
            / pow(2.0 * device_sheat_thickness, 2));
-        bYPlus1 = device_b0 * device_triggerRatio * (x - 0.5 * (device_xmax - device_xmin)) / device_sheat_thickness
-                * exp(-(pow((x - 0.5 * (device_xmax - device_xmin)), 2) + pow((yPlus1 - 0.5 * (device_ymax - device_ymin)), 2))
-                / pow(2.0 * device_sheat_thickness, 2));
-        bY = 0.5 * (bY + bYPlus1);
+        bYHalf = device_b0 * device_triggerRatio * (x - xCenter) / device_sheat_thickness
+               * exp(-(pow(x - xCenter, 2) + pow(yHalf - yCenter, 2))
+               / pow(2.0 * device_sheat_thickness, 2));
         bZ = 0.0;
-        p = device_p0 * (device_betaUpstream + pow(cosh((y - 0.5 * (device_ymax - device_ymin)) / device_sheat_thickness), -2));
+        p = device_p0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheat_thickness), -2));
         e = p / (device_gamma_mhd - 1.0)
           + 0.5 * rho * (u * u + v * v + w * w)
           + 0.5 * (bX * bX + bY * bY + bZ * bZ);
@@ -111,8 +115,8 @@ __global__ void initializeU_kernel(ConservationParameter* U)
         U[j + i * device_ny].rhoU = rho * u;
         U[j + i * device_ny].rhoV = rho * v;
         U[j + i * device_ny].rhoW = rho * w;
-        U[j + i * device_ny].bX   = bX;
-        U[j + i * device_ny].bY   = bY;
+        U[j + i * device_ny].bX   = bXHalf;
+        U[j + i * device_ny].bY   = bYHalf;
         U[j + i * device_ny].bZ   = bZ;
         U[j + i * device_ny].e    = e;
     }
@@ -126,6 +130,7 @@ void ResistiveMHD2D::initializeU()
     cudaMemcpyToSymbol(device_b0, &b0, sizeof(double));
     cudaMemcpyToSymbol(device_p0, &p0, sizeof(double));
     cudaMemcpyToSymbol(device_eta0, &eta0, sizeof(double));
+    cudaMemcpyToSymbol(device_eta1, &eta1, sizeof(double));
     cudaMemcpyToSymbol(device_triggerRatio, &triggerRatio, sizeof(double));
 
     dim3 threadsPerBlock(16, 16);
@@ -146,7 +151,12 @@ inline double getEta(double& xPosition, double& yPosition)
 {
     double eta;
 
-    eta = device_eta0;
+    eta = device_eta0 * pow(cosh(sqrt(
+          pow(xPosition - 0.5 * (device_xmax - device_xmin), 2)
+        + pow(yPosition - 0.5 * (device_ymax - device_ymin), 2
+        ))), -2)
+        * exp(-(static_cast<double>(device_step) / 1000.0))
+        + device_eta1;
     
     return eta;
 }
@@ -170,7 +180,7 @@ __global__ void addResistiveTermToFluxF_kernel(
         jY = -(U[j + (i + 1) * device_ny].bZ - U[j + (i - 1) * device_ny].bZ) / (2.0 * device_dx);
         jZ = (U[j + (i + 1) * device_ny].bY - U[j + (i - 1) * device_ny].bY) / (2.0 * device_dx)
            - (U[j + 1 + i * device_ny].bX - U[j - 1 + i * device_ny].bX) / (2.0 * device_dy);
-        
+    
         eta = getEta(xPosition, yPosition);
         etaJY = eta * jY; 
         etaJZ = eta * jZ;
@@ -282,7 +292,9 @@ int main()
 
     resistiveMHD2D.initializeU();
 
-    for (int step = 0; step < totalStep+1; step++) {
+    for (step = 0; step < totalStep+1; step++) {
+        cudaMemcpyToSymbol(device_step, &step, sizeof(int));
+
         if (step % recordStep == 0) {
             resistiveMHD2D.save(directoryname, filenameWithoutStep, step);
             logfile << std::to_string(step) << ","

@@ -28,8 +28,9 @@ void symmetricBoundaryX2nd_kernel(ConservationParameter* U)
         U[j + 2 * device_ny].bZ   = U[j + 3 * device_ny].bZ;
         U[j + 2 * device_ny].e    = U[j + 3 * device_ny].e;
 
-        U[j + 0 * device_ny].bX   = U[j + 2 * device_ny].bX;
-        U[j + 1 * device_ny].bX   = U[j + 2 * device_ny].bX;
+        U[j + 1 * device_ny].bX   = 2.0 * U[j + 2 * device_ny].bX - U[j + 3 * device_ny].bX;
+        U[j + 0 * device_ny].bX   = 2.0 * U[j + 1 * device_ny].bX - U[j + 2 * device_ny].bX;
+
 
         U[j + (device_nx - 1) * device_ny].rho  = U[j + (device_nx - 4) * device_ny].rho;
         U[j + (device_nx - 1) * device_ny].rhoU = U[j + (device_nx - 4) * device_ny].rhoU;
@@ -53,9 +54,12 @@ void symmetricBoundaryX2nd_kernel(ConservationParameter* U)
         U[j + (device_nx - 3) * device_ny].bZ   = U[j + (device_nx - 4) * device_ny].bZ;
         U[j + (device_nx - 3) * device_ny].e    = U[j + (device_nx - 4) * device_ny].e;
 
-        U[j + (device_nx - 1) * device_ny].bX   = U[j + (device_nx - 4) * device_ny].bX;
-        U[j + (device_nx - 2) * device_ny].bX   = U[j + (device_nx - 4) * device_ny].bX;
-        U[j + (device_nx - 3) * device_ny].bX   = U[j + (device_nx - 4) * device_ny].bX;
+        U[j + (device_nx - 3) * device_ny].bX   = 2.0 * U[j + (device_nx - 4) * device_ny].bX 
+                                                - U[j + (device_nx - 5) * device_ny].bX;
+        U[j + (device_nx - 2) * device_ny].bX   = 2.0 * U[j + (device_nx - 3) * device_ny].bX 
+                                                - U[j + (device_nx - 4) * device_ny].bX;
+        U[j + (device_nx - 1) * device_ny].bX   = 2.0 * U[j + (device_nx - 2) * device_ny].bX 
+                                                - U[j + (device_nx - 3) * device_ny].bX;
     }
 }
 
@@ -99,8 +103,9 @@ void symmetricBoundaryY2nd_kernel(ConservationParameter* U)
         U[2 + i * device_ny].bZ   = U[3 + i * device_ny].bZ;
         U[2 + i * device_ny].e    = U[3 + i * device_ny].e;
 
-        U[0 + i * device_ny].bY   = U[2 + i * device_ny].bY;
-        U[1 + i * device_ny].bY   = U[2 + i * device_ny].bY;
+        U[1 + i * device_ny].bY   = 2.0 * U[2 + i * device_ny].bY - U[3 + i * device_ny].bY;
+        U[0 + i * device_ny].bY   = 2.0 * U[1 + i * device_ny].bY - U[2 + i * device_ny].bY;
+        
 
         U[device_ny - 1 + i * device_ny].rho  = U[device_ny - 4 + i * device_ny].rho;
         U[device_ny - 1 + i * device_ny].rhoU = U[device_ny - 4 + i * device_ny].rhoU;
@@ -124,9 +129,12 @@ void symmetricBoundaryY2nd_kernel(ConservationParameter* U)
         U[device_ny - 3 + i * device_ny].bZ   = U[device_ny - 4 + i * device_ny].bZ;
         U[device_ny - 3 + i * device_ny].e    = U[device_ny - 4 + i * device_ny].e;
 
-        U[device_ny - 1 + i * device_ny].bY   = U[device_ny - 4 + i * device_ny].bY;
-        U[device_ny - 2 + i * device_ny].bY   = U[device_ny - 4 + i * device_ny].bY;
-        U[device_ny - 3 + i * device_ny].bY   = U[device_ny - 4 + i * device_ny].bY;
+        U[device_ny - 3 + i * device_ny].bY   = 2.0 * U[device_ny - 4 + i * device_ny].bY 
+                                              - U[device_ny - 5 + i * device_ny].bY;
+        U[device_ny - 2 + i * device_ny].bY   = 2.0 * U[device_ny - 3 + i * device_ny].bY 
+                                              - U[device_ny - 4 + i * device_ny].bY;
+        U[device_ny - 1 + i * device_ny].bY   = 2.0 * U[device_ny - 2 + i * device_ny].bY 
+                                              - U[device_ny - 3 + i * device_ny].bY;
     }
 }
 
