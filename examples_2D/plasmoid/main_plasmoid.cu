@@ -162,7 +162,7 @@ inline double getEta(double& xPosition, double& yPosition)
           pow(xPosition - 0.5 * (device_xmax - device_xmin), 2)
         + pow(yPosition - 0.5 * (device_ymax - device_ymin), 2)
         )), -2)
-        * exp(-(static_cast<double>(device_totalTime) / (10.0 * device_alfvenTime)))
+        * exp(-(static_cast<double>(device_totalTime) / (1.0 * device_alfvenTime)))
         + device_eta1;
     
     return eta;
