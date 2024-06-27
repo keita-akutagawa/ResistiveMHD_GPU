@@ -25,8 +25,9 @@ const double p0 = b0 * b0 / 2.0;
 const double VA = b0 / sqrt(rho0);
 const double alfvenTime = sheat_thickness / VA;
 
-const double eta0 = 1.0 / 50.0;
-const double eta1 = 1.0 / 500.0;
+const double eta0 = 1.0 / 100.0;
+const double eta1 = 1.0 / 100.0;
+double eta = eta0 + eta1;
 const double triggerRatio = 0.0;
 
 const double xmin = 0.0;
@@ -40,7 +41,7 @@ const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
 double dt = 0.0;
-const int totalStep = 200000;
+const int totalStep = 1000000;
 const int recordStep = 100;
 double totalTime = 0.0;
 
@@ -154,7 +155,7 @@ void ResistiveMHD2D::initializeU()
 
 
 __device__
-inline double getEta(double& xPosition, double& yPosition)
+inline double getEta(double xPosition, double yPosition)
 {
     double eta;
 

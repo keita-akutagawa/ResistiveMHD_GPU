@@ -22,6 +22,8 @@ extern double dt;
 extern const int totalStep;
 extern double totalTime;
 
+extern double eta;
+
 
 extern __constant__ double device_EPS;
 extern __constant__ double device_PI;
@@ -40,6 +42,8 @@ extern __constant__ double device_CFL;
 extern __constant__ double device_gamma_mhd;
 
 extern __device__ double device_dt;
+
+extern __device__ double device_eta;
 
 
 void initializeDeviceConstants();

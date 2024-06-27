@@ -284,8 +284,9 @@ void ResistiveMHD2D::calculateDt()
     );
 
     thrust::device_vector<double>::iterator dtMin = thrust::min_element(dtVector.begin(), dtVector.end());
-    
-    dt = (*dtMin) * CFL;
+
+    dt = min((*dtMin), min(dx * dx / eta, dy * dy / eta)) * CFL;
+
     cudaMemcpyToSymbol(device_dt, &dt, sizeof(double));
 }
 
