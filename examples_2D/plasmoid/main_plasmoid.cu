@@ -22,18 +22,20 @@ const double betaUpstream = 0.5;
 const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
+const double VA = b0 / sqrt(rho0);
+const double alfvenTime = sheat_thickness / VA;
 
-const double eta0 = 1.0 / 100.0;
+const double eta0 = 1.0 / 50.0;
 const double eta1 = 1.0 / 500.0;
 const double triggerRatio = 0.0;
 
 const double xmin = 0.0;
-const double xmax = 500.0;
-const double dx = sheat_thickness / 10.0;
+const double xmax = 400.0;
+const double dx = sheat_thickness / 8.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
-const double ymax = 20.0;
-const double dy = sheat_thickness / 10.0;
+const double ymax = 40.0;
+const double dy = sheat_thickness / 8.0;
 const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
@@ -59,12 +61,15 @@ __constant__ double device_CFL;
 __constant__ double device_gamma_mhd;
 
 __device__ double device_dt;
+__device__ double device_totalTime;
 
 __constant__ double device_sheat_thickness;
 __constant__ double device_betaUpstream;
 __constant__ double device_rho0;
 __constant__ double device_b0;
 __constant__ double device_p0;
+__constant__ double device_VA;
+__constant__ double device_alfvenTime;
 
 __constant__ double device_eta0;
 __constant__ double device_eta1;
@@ -129,6 +134,8 @@ void ResistiveMHD2D::initializeU()
     cudaMemcpyToSymbol(device_rho0, &rho0, sizeof(double));
     cudaMemcpyToSymbol(device_b0, &b0, sizeof(double));
     cudaMemcpyToSymbol(device_p0, &p0, sizeof(double));
+    cudaMemcpyToSymbol(device_VA, &VA, sizeof(double));
+    cudaMemcpyToSymbol(device_alfvenTime, &alfvenTime, sizeof(double));
     cudaMemcpyToSymbol(device_eta0, &eta0, sizeof(double));
     cudaMemcpyToSymbol(device_eta1, &eta1, sizeof(double));
     cudaMemcpyToSymbol(device_triggerRatio, &triggerRatio, sizeof(double));
@@ -155,7 +162,7 @@ inline double getEta(double& xPosition, double& yPosition)
           pow(xPosition - 0.5 * (device_xmax - device_xmin), 2)
         + pow(yPosition - 0.5 * (device_ymax - device_ymin), 2)
         )), -2)
-        * exp(-(static_cast<double>(device_step) / 1000.0))
+        * exp(-(static_cast<double>(device_totalTime) / (10.0 * device_alfvenTime)))
         + device_eta1;
     
     return eta;
@@ -293,7 +300,7 @@ int main()
     resistiveMHD2D.initializeU();
 
     for (step = 0; step < totalStep+1; step++) {
-        cudaMemcpyToSymbol(device_step, &step, sizeof(int));
+        cudaMemcpyToSymbol(device_totalTime, &totalTime, sizeof(int));
 
         if (step % recordStep == 0) {
             resistiveMHD2D.save(directoryname, filenameWithoutStep, step);
