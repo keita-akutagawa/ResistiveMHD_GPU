@@ -25,10 +25,10 @@ const double p0 = b0 * b0 / 2.0;
 const double VA = b0 / sqrt(rho0);
 const double alfvenTime = sheat_thickness / VA;
 
-const double eta0 = 1.0 / 100.0;
-const double eta1 = 1.0 / 100.0;
+const double eta0 = 0.0;
+const double eta1 = 1.0 / 500.0;
 double eta = eta0 + eta1;
-const double triggerRatio = 0.0;
+const double triggerRatio = 0.01;
 
 const double xmin = 0.0;
 const double xmax = 400.0;
@@ -41,7 +41,7 @@ const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
 double dt = 0.0;
-const int totalStep = 1000000;
+const int totalStep = 100000;
 const int recordStep = 100;
 double totalTime = 0.0;
 
@@ -100,17 +100,17 @@ __global__ void initializeU_kernel(ConservationParameter* U)
         w = 0.0;
         bX = device_b0 * tanh((y - yCenter) / device_sheat_thickness)
            - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
-           * exp(-(pow(x - xCenter, 2) + pow(y - yCenter, 2))
+           * exp(-(pow((x - xCenter) / 10, 2) + pow(y - yCenter, 2))
            / pow(2.0 * device_sheat_thickness, 2));
         bXHalf = device_b0 * tanh((y - yCenter) / device_sheat_thickness)
                - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
-               * exp(-(pow(xHalf - xCenter, 2) + pow(y - yCenter, 2))
+               * exp(-(pow((xHalf - xCenter) / 10, 2) + pow(y - yCenter, 2))
                / pow(2.0 * device_sheat_thickness, 2));
-        bY = device_b0 * device_triggerRatio * (x - xCenter) / device_sheat_thickness
-           * exp(-(pow(x - xCenter, 2) + pow(y - yCenter, 2))
+        bY = device_b0 * device_triggerRatio * (x - xCenter) / 10 / device_sheat_thickness
+           * exp(-(pow((x - xCenter) / 10, 2) + pow(y - yCenter, 2))
            / pow(2.0 * device_sheat_thickness, 2));
-        bYHalf = device_b0 * device_triggerRatio * (x - xCenter) / device_sheat_thickness
-               * exp(-(pow(x - xCenter, 2) + pow(yHalf - yCenter, 2))
+        bYHalf = device_b0 * device_triggerRatio * (x - xCenter) / 10 / device_sheat_thickness
+               * exp(-(pow((x - xCenter) / 10, 2) + pow(yHalf - yCenter, 2))
                / pow(2.0 * device_sheat_thickness, 2));
         bZ = 0.0;
         p = device_p0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheat_thickness), -2));
