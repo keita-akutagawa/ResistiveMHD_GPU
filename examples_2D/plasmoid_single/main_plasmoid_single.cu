@@ -13,13 +13,13 @@ std::string directoryname = "results";
 std::string filenameWithoutStep = "plasmoid";
 std::ofstream logfile("results/log_plasmoid.txt");
 
-const float EPS = 0.00000001f;
+const float EPS = 1.0e-20f;
 const float PI = 3.141592653f;
 
 const float gamma_mhd = 5.0f / 3.0f;
 
 const float sheat_thickness = 1.0f;
-const float betaUpstream = 0.5f;
+const float betaUpstream = 2.0f;
 const float rho0 = 1.0f;
 const float b0 = 1.0f;
 const float p0 = b0 * b0 / 2.0f;
@@ -27,22 +27,22 @@ const float VA = b0 / sqrt(rho0);
 const float alfvenTime = sheat_thickness / VA;
 
 const float eta0 = 0.0f;
-const float eta1 = 0.0f;
+const float eta1 = 1.0f / 200.0f;
 float eta = eta0 + eta1;
 const float triggerRatio = 0.01f;
 
 const float xmin = 0.0f;
-const float xmax = 200.0f;
+const float xmax = 600.0f;
 const float dx = sheat_thickness / 8.0f;
 const int nx = int((xmax - xmin) / dx);
 const float ymin = 0.0f;
-const float ymax = 20.0f;
+const float ymax = 50.0f;
 const float dy = sheat_thickness / 8.0f;
 const int ny = int((ymax - ymin) / dy);
 
-const float CFL = 0.2f;
+const float CFL = 0.7f;
 float dt = 0.0f;
-const int totalStep = 1000;
+const int totalStep = 100000;
 const int recordStep = 100;
 float totalTime = 0.0f;
 
