@@ -6,44 +6,45 @@
 #include <iomanip>
 #include "../../lib_ResistiveMHD_2D_GPU_symmetricXY_single/const.hpp"
 #include "../../lib_ResistiveMHD_2D_GPU_symmetricXY_single/resistiveMHD_2D.hpp"
+#include <cuda_runtime.h>
 
 
 std::string directoryname = "results";
 std::string filenameWithoutStep = "plasmoid";
 std::ofstream logfile("results/log_plasmoid.txt");
 
-const float EPS = 1e-20;
-const float PI = 3.141592653589793;
+const float EPS = 0.00000001f;
+const float PI = 3.141592653f;
 
-const float gamma_mhd = 5.0 / 3.0;
+const float gamma_mhd = 5.0f / 3.0f;
 
-const float sheat_thickness = 1.0;
-const float betaUpstream = 0.5;
-const float rho0 = 1.0;
-const float b0 = 1.0;
-const float p0 = b0 * b0 / 2.0;
+const float sheat_thickness = 1.0f;
+const float betaUpstream = 0.5f;
+const float rho0 = 1.0f;
+const float b0 = 1.0f;
+const float p0 = b0 * b0 / 2.0f;
 const float VA = b0 / sqrt(rho0);
 const float alfvenTime = sheat_thickness / VA;
 
-const float eta0 = 0.0;
-const float eta1 = 1.0 / 500.0;
+const float eta0 = 0.0f;
+const float eta1 = 0.0f;
 float eta = eta0 + eta1;
-const float triggerRatio = 0.01;
+const float triggerRatio = 0.01f;
 
-const float xmin = 0.0;
-const float xmax = 400.0;
-const float dx = sheat_thickness / 8.0;
+const float xmin = 0.0f;
+const float xmax = 200.0f;
+const float dx = sheat_thickness / 8.0f;
 const int nx = int((xmax - xmin) / dx);
-const float ymin = 0.0;
-const float ymax = 40.0;
-const float dy = sheat_thickness / 8.0;
+const float ymin = 0.0f;
+const float ymax = 20.0f;
+const float dy = sheat_thickness / 8.0f;
 const int ny = int((ymax - ymin) / dy);
 
-const float CFL = 0.7;
-float dt = 0.0;
-const int totalStep = 100000;
+const float CFL = 0.2f;
+float dt = 0.0f;
+const int totalStep = 1000;
 const int recordStep = 100;
-float totalTime = 0.0;
+float totalTime = 0.0f;
 
 __constant__ float device_EPS;
 __constant__ float device_PI;
@@ -91,32 +92,32 @@ __global__ void initializeU_kernel(ConservationParameter* U)
         float rho, u, v, w, bX, bY, bZ, e, p;
         float bXHalf, bYHalf;
         float x = i * device_dx, y = j * device_dy;
-        float xHalf = (i + 0.5) * device_dx, yHalf = (j + 0.5) * device_dy;
-        float xCenter = 0.5 * (device_xmax - device_xmin), yCenter = 0.5 * (device_ymax - device_ymin);
+        float xHalf = (i + 0.5f) * device_dx, yHalf = (j + 0.5f) * device_dy;
+        float xCenter = 0.5f * (device_xmax - device_xmin), yCenter = 0.5f * (device_ymax - device_ymin);
         
         rho = device_rho0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheat_thickness), -2));
-        u = 0.0;
-        v = 0.0;
-        w = 0.0;
+        u = 0.0f;
+        v = 0.0f;
+        w = 0.0f;
         bX = device_b0 * tanh((y - yCenter) / device_sheat_thickness)
            - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
-           * exp(-(pow((x - xCenter) / 10, 2) + pow(y - yCenter, 2))
-           / pow(2.0 * device_sheat_thickness, 2));
+           * exp(-(pow((x - xCenter) / 10.0f, 2) + pow(y - yCenter, 2))
+           / pow(2.0f * device_sheat_thickness, 2));
         bXHalf = device_b0 * tanh((y - yCenter) / device_sheat_thickness)
                - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
-               * exp(-(pow((xHalf - xCenter) / 10, 2) + pow(y - yCenter, 2))
-               / pow(2.0 * device_sheat_thickness, 2));
-        bY = device_b0 * device_triggerRatio * (x - xCenter) / 10 / device_sheat_thickness
-           * exp(-(pow((x - xCenter) / 10, 2) + pow(y - yCenter, 2))
-           / pow(2.0 * device_sheat_thickness, 2));
-        bYHalf = device_b0 * device_triggerRatio * (x - xCenter) / 10 / device_sheat_thickness
-               * exp(-(pow((x - xCenter) / 10, 2) + pow(yHalf - yCenter, 2))
-               / pow(2.0 * device_sheat_thickness, 2));
-        bZ = 0.0;
+               * exp(-(pow((xHalf - xCenter) / 10.0f, 2) + pow(y - yCenter, 2))
+               / pow(2.0f * device_sheat_thickness, 2));
+        bY = device_b0 * device_triggerRatio * (x - xCenter) / 10.0f / device_sheat_thickness
+           * exp(-(pow((x - xCenter) / 10.0f, 2) + pow(y - yCenter, 2))
+           / pow(2.0f * device_sheat_thickness, 2));
+        bYHalf = device_b0 * device_triggerRatio * (x - xCenter) / 10.0f / device_sheat_thickness
+               * exp(-(pow((x - xCenter) / 10.0f, 2) + pow(yHalf - yCenter, 2))
+               / pow(2.0f * device_sheat_thickness, 2));
+        bZ = 0.0f;
         p = device_p0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheat_thickness), -2));
-        e = p / (device_gamma_mhd - 1.0)
-          + 0.5 * rho * (u * u + v * v + w * w)
-          + 0.5 * (bX * bX + bY * bY + bZ * bZ);
+        e = p / (device_gamma_mhd - 1.0f)
+          + 0.5f * rho * (u * u + v * v + w * w)
+          + 0.5f * (bX * bX + bY * bY + bZ * bZ);
         
         U[j + i * device_ny].rho  = rho;
         U[j + i * device_ny].rhoU = rho * u;
@@ -157,15 +158,15 @@ void ResistiveMHD2D::initializeU()
 
 
 __device__
-inline float getEta(float xPosition, float yPosition)
+inline float getEta(float& xPosition, float& yPosition)
 {
     float eta;
 
     eta = device_eta0 * pow(cosh(sqrt(
-          pow(xPosition - 0.5 * (device_xmax - device_xmin), 2)
-        + pow(yPosition - 0.5 * (device_ymax - device_ymin), 2)
+          pow(xPosition - 0.5f * (device_xmax - device_xmin), 2)
+        + pow(yPosition - 0.5f * (device_ymax - device_ymin), 2)
         )), -2)
-        * exp(-(static_cast<float>(device_totalTime) / (1.0 * device_alfvenTime)))
+        * exp(-(static_cast<float>(device_totalTime) / (1.0f * device_alfvenTime)))
         + device_eta1;
     
     return eta;
@@ -187,9 +188,9 @@ __global__ void addResistiveTermToFluxF_kernel(
         float etaJY, etaJYPlus1, etaJZ, etaJZPlus1;
         float etaJYBZ, etaJYBZPlus1, etaJZBY, etaJZBYPlus1;
 
-        jY = -(U[j + (i + 1) * device_ny].bZ - U[j + (i - 1) * device_ny].bZ) / (2.0 * device_dx);
-        jZ = (U[j + (i + 1) * device_ny].bY - U[j + (i - 1) * device_ny].bY) / (2.0 * device_dx)
-           - (U[j + 1 + i * device_ny].bX - U[j - 1 + i * device_ny].bX) / (2.0 * device_dy);
+        jY = -(U[j + (i + 1) * device_ny].bZ - U[j + (i - 1) * device_ny].bZ) / (2.0f * device_dx);
+        jZ = (U[j + (i + 1) * device_ny].bY - U[j + (i - 1) * device_ny].bY) / (2.0f * device_dx)
+           - (U[j + 1 + i * device_ny].bX - U[j - 1 + i * device_ny].bX) / (2.0f * device_dy);
     
         eta = getEta(xPosition, yPosition);
         etaJY = eta * jY; 
@@ -197,9 +198,9 @@ __global__ void addResistiveTermToFluxF_kernel(
         etaJYBZ = etaJY * U[j + i * device_ny].bZ;
         etaJZBY = etaJZ * U[j + i * device_ny].bY;
 
-        jY = -(U[j + (i + 2) * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0 * device_dx);
-        jZ = (U[j + (i + 2) * device_ny].bY - U[j + i * device_ny].bY) / (2.0 * device_dx)
-           - (U[j + 1 + (i + 1) * device_ny].bX - U[j - 1 + (i + 1) * device_ny].bX) / (2.0 * device_dy);
+        jY = -(U[j + (i + 2) * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0f * device_dx);
+        jZ = (U[j + (i + 2) * device_ny].bY - U[j + i * device_ny].bY) / (2.0f * device_dx)
+           - (U[j + 1 + (i + 1) * device_ny].bX - U[j - 1 + (i + 1) * device_ny].bX) / (2.0f * device_dy);
         
         eta = getEta(xPositionPlus1, yPosition);
         etaJYPlus1 = eta * jY; 
@@ -207,10 +208,10 @@ __global__ void addResistiveTermToFluxF_kernel(
         etaJYBZPlus1 = etaJYPlus1 * U[j + (i + 1) * device_ny].bZ;
         etaJZBYPlus1 = etaJZPlus1 * U[j + (i + 1) * device_ny].bY;
   
-        flux[j + i * device_ny].f5 -= 0.5 * (etaJZ + etaJZPlus1);
-        flux[j + i * device_ny].f6 += 0.5 * (etaJY + etaJYPlus1);
-        flux[j + i * device_ny].f7 += 0.5 * (etaJYBZ + etaJYBZPlus1)
-                                    - 0.5 * (etaJZBY + etaJZBYPlus1);
+        flux[j + i * device_ny].f5 -= 0.5f * (etaJZ + etaJZPlus1);
+        flux[j + i * device_ny].f6 += 0.5f * (etaJY + etaJYPlus1);
+        flux[j + i * device_ny].f7 += 0.5f * (etaJYBZ + etaJYBZPlus1)
+                                    - 0.5f * (etaJZBY + etaJZBYPlus1);
     }
 }
 
@@ -246,9 +247,9 @@ __global__ void addResistiveTermToFluxG_kernel(
         float etaJX, etaJXPlus1, etaJZ, etaJZPlus1;
         float etaJZBX, etaJZBXPlus1, etaJXBZ, etaJXBZPlus1;
 
-        jX = (U[j + 1 + i * device_ny].bZ - U[j - 1 + i * device_ny].bZ) / (2.0 * device_dy);
-        jZ = (U[j + (i + 1) * device_ny].bY - U[j + (i - 1) * device_ny].bY) / (2.0 * device_dx)
-           - (U[j + 1 + i * device_ny].bX - U[j - 1 + i * device_ny].bX) / (2.0 * device_dy);
+        jX = (U[j + 1 + i * device_ny].bZ - U[j - 1 + i * device_ny].bZ) / (2.0f * device_dy);
+        jZ = (U[j + (i + 1) * device_ny].bY - U[j + (i - 1) * device_ny].bY) / (2.0f * device_dx)
+           - (U[j + 1 + i * device_ny].bX - U[j - 1 + i * device_ny].bX) / (2.0f * device_dy);
         
         eta = getEta(xPosition, yPosition);
         etaJX = eta * jX;
@@ -256,9 +257,9 @@ __global__ void addResistiveTermToFluxG_kernel(
         etaJXBZ = etaJX * U[j + i * device_ny].bZ;
         etaJZBX = etaJZ * U[j + i * device_ny].bX;
 
-        jX = (U[j + 2 + i * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0 * device_dy);
-        jZ = (U[j + 1 + (i + 1) * device_ny].bY - U[j + 1 + (i - 1) * device_ny].bY) / (2.0 * device_dx)
-           - (U[j + 2 + i * device_ny].bX - U[j + i * device_ny].bX) / (2.0 * device_dy);
+        jX = (U[j + 2 + i * device_ny].bZ - U[j + i * device_ny].bZ) / (2.0f * device_dy);
+        jZ = (U[j + 1 + (i + 1) * device_ny].bY - U[j + 1 + (i - 1) * device_ny].bY) / (2.0f * device_dx)
+           - (U[j + 2 + i * device_ny].bX - U[j + i * device_ny].bX) / (2.0f * device_dy);
         
         eta = getEta(xPosition, yPositionPlus1);
         etaJXPlus1 = eta * jX;
@@ -266,10 +267,10 @@ __global__ void addResistiveTermToFluxG_kernel(
         etaJXBZPlus1 = etaJXPlus1 * U[j + 1 + i * device_ny].bZ;
         etaJZBXPlus1 = etaJZPlus1 * U[j + 1 + i * device_ny].bX;
   
-        flux[j + i * device_ny].f4 += 0.5 * (etaJZ + etaJZPlus1);
-        flux[j + i * device_ny].f6 -= 0.5 * (etaJX + etaJXPlus1);
-        flux[j + i * device_ny].f7 += 0.5 * (etaJZBX + etaJZBXPlus1)
-                                    - 0.5 * (etaJXBZ + etaJXBZPlus1);
+        flux[j + i * device_ny].f4 += 0.5f * (etaJZ + etaJZPlus1);
+        flux[j + i * device_ny].f6 -= 0.5f * (etaJX + etaJXPlus1);
+        flux[j + i * device_ny].f7 += 0.5f * (etaJZBX + etaJZBXPlus1)
+                                    - 0.5f * (etaJXBZ + etaJXBZPlus1);
     }
 }
 
@@ -303,7 +304,7 @@ int main()
     resistiveMHD2D.initializeU();
 
     for (step = 0; step < totalStep+1; step++) {
-        cudaMemcpyToSymbol(device_totalTime, &totalTime, sizeof(int));
+        cudaMemcpyToSymbol(device_totalTime, &totalTime, sizeof(float));
 
         if (step % recordStep == 0) {
             resistiveMHD2D.save(directoryname, filenameWithoutStep, step);
@@ -323,6 +324,15 @@ int main()
         }
 
         totalTime += dt;
+
+        if (step == 0) {
+            size_t free_mem = 0;
+            size_t total_mem = 0;
+            cudaError_t status = cudaMemGetInfo(&free_mem, &total_mem);
+
+            std::cout << "Free memory: " << free_mem / (1024 * 1024 * 1024) << " GB" << std::endl;
+            std::cout << "Total memory: " << total_mem / (1024 * 1024 * 1024) << " GB" << std::endl;
+        }
     }
     
     return 0;
