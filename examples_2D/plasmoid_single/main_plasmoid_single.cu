@@ -9,9 +9,9 @@
 #include <cuda_runtime.h>
 
 
-std::string directoryname = "results";
+std::string directoryname = "results_plasmoid_eta=1000000_grid=8";
 std::string filenameWithoutStep = "plasmoid";
-std::ofstream logfile("results/log_plasmoid.txt");
+std::ofstream logfile("results_plasmoid_eta=1000000_grid=8/log_plasmoid.txt");
 
 const float EPS = 1.0e-20f;
 const float PI = 3.141592653f;
@@ -27,16 +27,16 @@ const float VA = b0 / sqrt(rho0);
 const float alfvenTime = sheat_thickness / VA;
 
 const float eta0 = 0.0f;
-const float eta1 = 1.0f / 200.0f;
+const float eta1 = 1.0f / 10000.0f;
 float eta = eta0 + eta1;
 const float triggerRatio = 0.01f;
 
 const float xmin = 0.0f;
-const float xmax = 600.0f;
+const float xmax = 400.0f;
 const float dx = sheat_thickness / 8.0f;
 const int nx = int((xmax - xmin) / dx);
 const float ymin = 0.0f;
-const float ymax = 50.0f;
+const float ymax = 40.0f;
 const float dy = sheat_thickness / 8.0f;
 const int ny = int((ymax - ymin) / dy);
 
