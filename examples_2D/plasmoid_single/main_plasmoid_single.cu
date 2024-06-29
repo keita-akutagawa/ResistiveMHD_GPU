@@ -19,7 +19,7 @@ const float PI = 3.141592653f;
 const float gamma_mhd = 5.0f / 3.0f;
 
 const float sheat_thickness = 1.0f;
-const float betaUpstream = 5.0f;
+const float betaUpstream = 2.0f;
 const float rho0 = 1.0f;
 const float b0 = 1.0f;
 const float p0 = b0 * b0 / 2.0f;
@@ -27,7 +27,7 @@ const float VA = b0 / sqrt(rho0);
 const float alfvenTime = sheat_thickness / VA;
 
 const float eta0 = 0.0f;
-const float eta1 = 1.0f / 1000.0f;
+const float eta1 = 1.0f / 10000.0f;
 float eta = eta0 + eta1;
 const float triggerRatio = 0.01f;
 
