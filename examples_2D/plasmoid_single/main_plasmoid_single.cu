@@ -9,9 +9,9 @@
 #include <cuda_runtime.h>
 
 
-std::string directoryname = "results_plasmoid_eta=1000000_grid=8";
+std::string directoryname = "results_plasmoid_eta=10000_grid=8";
 std::string filenameWithoutStep = "plasmoid";
-std::ofstream logfile("results_plasmoid_eta=1000000_grid=8/log_plasmoid.txt");
+std::ofstream logfile("results_plasmoid_eta=10000_grid=8/log_plasmoid.txt");
 
 const float EPS = 1.0e-20f;
 const float PI = 3.141592653f;
@@ -19,7 +19,7 @@ const float PI = 3.141592653f;
 const float gamma_mhd = 5.0f / 3.0f;
 
 const float sheat_thickness = 1.0f;
-const float betaUpstream = 2.0f;
+const float betaUpstream = 5.0f;
 const float rho0 = 1.0f;
 const float b0 = 1.0f;
 const float p0 = b0 * b0 / 2.0f;
@@ -27,7 +27,7 @@ const float VA = b0 / sqrt(rho0);
 const float alfvenTime = sheat_thickness / VA;
 
 const float eta0 = 0.0f;
-const float eta1 = 1.0f / 10000.0f;
+const float eta1 = 1.0f / 1000.0f;
 float eta = eta0 + eta1;
 const float triggerRatio = 0.01f;
 
@@ -113,6 +113,10 @@ __global__ void initializeU_kernel(ConservationParameter* U)
         bYHalf = device_b0 * device_triggerRatio * (x - xCenter) / 10.0f / device_sheat_thickness
                * exp(-(pow((x - xCenter) / 10.0f, 2) + pow(yHalf - yCenter, 2))
                / pow(2.0f * device_sheat_thickness, 2));
+        if ((i > device_nx/2 - 20) && (i < device_nx/2 + 20) && (j > device_ny/2 - 2) && (j < device_ny/2 + 2)) {
+            bY = 0.0;
+            bYHalf = 0.0;
+        }
         bZ = 0.0f;
         p = device_p0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheat_thickness), -2));
         e = p / (device_gamma_mhd - 1.0f)
