@@ -18,31 +18,31 @@ const double PI = 3.141592653589793;
 const double gamma_mhd = 5.0 / 3.0;
 
 const double sheat_thickness = 1.0;
-const double betaUpstream = 0.5;
+const double betaUpstream = 0.2;
 const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
 const double VA = b0 / sqrt(rho0);
 const double alfvenTime = sheat_thickness / VA;
 
-const double eta0 = 0.0;
-const double eta1 = 1.0 / 500.0;
+const double eta0 = 1.0 / 100.0;
+const double eta1 = 1.0 / 10000.0;
 double eta = eta0 + eta1;
-const double triggerRatio = 0.01;
+const double triggerRatio = 0.0;
 
 const double xmin = 0.0;
-const double xmax = 400.0;
-const double dx = sheat_thickness / 8.0;
+const double xmax = 200.0;
+const double dx = sheat_thickness / 16.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
-const double ymax = 40.0;
-const double dy = sheat_thickness / 8.0;
+const double ymax = 20.0;
+const double dy = sheat_thickness / 16.0;
 const int ny = int((ymax - ymin) / dy);
 
 const double CFL = 0.7;
 double dt = 0.0;
 const int totalStep = 100000;
-const int recordStep = 100;
+const int recordStep = 500;
 double totalTime = 0.0;
 
 __constant__ double device_EPS;

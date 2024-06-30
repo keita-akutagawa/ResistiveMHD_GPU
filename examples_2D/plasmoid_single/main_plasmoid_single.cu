@@ -19,7 +19,7 @@ const float PI = 3.141592653f;
 const float gamma_mhd = 5.0f / 3.0f;
 
 const float sheat_thickness = 1.0f;
-const float betaUpstream = 2.0f;
+const float betaUpstream = 0.2f;
 const float rho0 = 1.0f;
 const float b0 = 1.0f;
 const float p0 = b0 * b0 / 2.0f;
@@ -27,20 +27,20 @@ const float VA = b0 / sqrt(rho0);
 const float alfvenTime = sheat_thickness / VA;
 
 const float eta0 = 0.0f;
-const float eta1 = 1.0f / 10000.0f;
+const float eta1 = 1.0 / 100.0f;
 float eta = eta0 + eta1;
 const float triggerRatio = 0.01f;
 
 const float xmin = 0.0f;
-const float xmax = 400.0f;
-const float dx = sheat_thickness / 8.0f;
+const float xmax = 200.0f;
+const float dx = sheat_thickness / 16.0f;
 const int nx = int((xmax - xmin) / dx);
 const float ymin = 0.0f;
-const float ymax = 40.0f;
-const float dy = sheat_thickness / 8.0f;
+const float ymax = 20.0f;
+const float dy = sheat_thickness / 16.0f;
 const int ny = int((ymax - ymin) / dy);
 
-const float CFL = 0.7f;
+const float CFL = 0.2f;
 float dt = 0.0f;
 const int totalStep = 100000;
 const int recordStep = 100;
@@ -83,6 +83,77 @@ int step;
 __device__ int device_step;
 
 
+__global__ void poyntingFluxY2nd_kernel(ConservationParameter* U) 
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (i < device_nx && j < device_ny) {
+        float flowRatio = 0.1f;
+
+        if (j < 10) {
+            float rho, u, v, w, bX ,bY, bZ, e, p;
+            rho = device_betaUpstream * device_rho0;
+            u = 0.0; 
+            v = flowRatio * device_VA * (1.0 - exp(-device_totalTime / 1000.0f)); 
+            w = 0.0;
+            bX = -device_b0; 
+            bY = 0.0; 
+            bZ = 0.0;
+            p = device_p0 * device_betaUpstream;
+            e = p / (device_gamma_mhd - 1.0) + 0.5 * rho * (u * u + v * v + w * w)
+              + 0.5 * (bX * bX + bY * bY + bZ * bZ);
+
+            U[j + i * device_ny].rho  = rho;
+            U[j + i * device_ny].rhoU = rho * u;
+            U[j + i * device_ny].rhoV = rho * v;
+            U[j + i * device_ny].rhoW = rho * w;
+            U[j + i * device_ny].bX   = bX;
+            U[j + i * device_ny].bY   = bY;
+            U[j + i * device_ny].bZ   = bZ;
+            U[j + i * device_ny].e    = e;
+        }
+
+        if (j > device_ny - 11) {
+            float rho, u, v, w, bX ,bY, bZ, e, p;
+            rho = device_betaUpstream * device_rho0;
+            u = 0.0; 
+            v = -flowRatio * device_VA * (1.0 - exp(-device_totalTime / 1000.0f)); 
+            w = 0.0;
+            bX = device_b0;
+            bY = 0.0; 
+            bZ = 0.0;
+            p = device_p0 * device_betaUpstream;
+            e = p / (device_gamma_mhd - 1.0) + 0.5 * rho * (u * u + v * v + w * w)
+              + 0.5 * (bX * bX + bY * bY + bZ * bZ);
+
+            U[j + i * device_ny].rho  = rho;
+            U[j + i * device_ny].rhoU = rho * u;
+            U[j + i * device_ny].rhoV = rho * v;
+            U[j + i * device_ny].rhoW = rho * w;
+            U[j + i * device_ny].bX   = bX;
+            U[j + i * device_ny].bY   = bY;
+            U[j + i * device_ny].bZ   = bZ;
+            U[j + i * device_ny].e    = e;
+        }
+
+    }
+}
+
+void Boundary::poyntingFluxY2nd(thrust::device_vector<ConservationParameter>& U)
+{
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                       (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    poyntingFluxY2nd_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(U.data())
+    );
+
+    cudaDeviceSynchronize();
+}
+
+
 __global__ void initializeU_kernel(ConservationParameter* U) 
 {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -99,29 +170,28 @@ __global__ void initializeU_kernel(ConservationParameter* U)
         u = 0.0f;
         v = 0.0f;
         w = 0.0f;
-        bX = device_b0 * tanh((y - yCenter) / device_sheat_thickness)
-           - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
-           * exp(-(pow((x - xCenter) / 10.0f, 2) + pow(y - yCenter, 2))
-           / pow(2.0f * device_sheat_thickness, 2));
-        bXHalf = device_b0 * tanh((y - yCenter) / device_sheat_thickness)
-               - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
-               * exp(-(pow((xHalf - xCenter) / 10.0f, 2) + pow(y - yCenter, 2))
-               / pow(2.0f * device_sheat_thickness, 2));
-        bY = device_b0 * device_triggerRatio * (x - xCenter) / 10.0f / device_sheat_thickness
-           * exp(-(pow((x - xCenter) / 10.0f, 2) + pow(y - yCenter, 2))
-           / pow(2.0f * device_sheat_thickness, 2));
-        bYHalf = device_b0 * device_triggerRatio * (x - xCenter) / 10.0f / device_sheat_thickness
-               * exp(-(pow((x - xCenter) / 10.0f, 2) + pow(yHalf - yCenter, 2))
-               / pow(2.0f * device_sheat_thickness, 2));
-        if ((i > device_nx/2 - 20) && (i < device_nx/2 + 20) && (j > device_ny/2 - 2) && (j < device_ny/2 + 2)) {
-            bY = 0.0;
-            bYHalf = 0.0;
-        }
+        bX = device_b0 * tanh((y - yCenter) / device_sheat_thickness);
+        bXHalf = device_b0 * tanh((y - yCenter) / device_sheat_thickness);
+        bY = 0.0;
+        bYHalf = 0.0;
         bZ = 0.0f;
         p = device_p0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheat_thickness), -2));
         e = p / (device_gamma_mhd - 1.0f)
           + 0.5f * rho * (u * u + v * v + w * w)
           + 0.5f * (bX * bX + bY * bY + bZ * bZ);
+        
+        bX += - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
+            * exp(-(pow(x - xCenter, 2) + pow(y - yCenter, 2))
+            / pow(2.0f * device_sheat_thickness, 2));
+        bXHalf += - device_b0 * device_triggerRatio * (y - yCenter) / device_sheat_thickness
+                * exp(-(pow(xHalf - xCenter, 2) + pow(y - yCenter, 2))
+                / pow(2.0f * device_sheat_thickness, 2));
+        bY += device_b0 * device_triggerRatio * (x - xCenter) / device_sheat_thickness
+            * exp(-(pow(x - xCenter, 2) + pow(y - yCenter, 2))
+            / pow(2.0f * device_sheat_thickness, 2));
+        bYHalf += device_b0 * device_triggerRatio * (x - xCenter) / device_sheat_thickness
+                * exp(-(pow(x - xCenter, 2) + pow(yHalf - yCenter, 2))
+                / pow(2.0f * device_sheat_thickness, 2));
         
         U[j + i * device_ny].rho  = rho;
         U[j + i * device_ny].rhoU = rho * u;
@@ -153,7 +223,6 @@ void ResistiveMHD2D::initializeU()
                        (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
     initializeU_kernel<<<blocksPerGrid, threadsPerBlock>>>(thrust::raw_pointer_cast(U.data()));
-
     cudaDeviceSynchronize();
 
     boundary.symmetricBoundaryX2nd(U);
