@@ -9,9 +9,9 @@
 #include <cuda_runtime.h>
 
 
-std::string directoryname = "results_plasmoid_eta=10000_grid=8";
+std::string directoryname = "results_plasmoid_eta=10000_grid=16";
 std::string filenameWithoutStep = "plasmoid";
-std::ofstream logfile("results_plasmoid_eta=10000_grid=8/log_plasmoid.txt");
+std::ofstream logfile("results_plasmoid_eta=10000_grid=16/log_plasmoid.txt");
 
 const float EPS = 1.0e-20f;
 const float PI = 3.141592653f;
@@ -19,31 +19,31 @@ const float PI = 3.141592653f;
 const float gamma_mhd = 5.0f / 3.0f;
 
 const float sheat_thickness = 1.0f;
-const float betaUpstream = 0.2f;
+const float betaUpstream = 2.0f;
 const float rho0 = 1.0f;
 const float b0 = 1.0f;
 const float p0 = b0 * b0 / 2.0f;
 const float VA = b0 / sqrt(rho0);
 const float alfvenTime = sheat_thickness / VA;
 
-const float eta0 = 0.0f;
-const float eta1 = 1.0 / 100.0f;
+const float eta0 = 1.0 / 100.0f;
+const float eta1 = 1.0 / 10000.0f;
 float eta = eta0 + eta1;
-const float triggerRatio = 0.01f;
+const float triggerRatio = 0.0f;
 
 const float xmin = 0.0f;
-const float xmax = 200.0f;
+const float xmax = 300.0f * sheat_thickness;
 const float dx = sheat_thickness / 16.0f;
 const int nx = int((xmax - xmin) / dx);
 const float ymin = 0.0f;
-const float ymax = 20.0f;
+const float ymax = 30.0f * sheat_thickness;
 const float dy = sheat_thickness / 16.0f;
 const int ny = int((ymax - ymin) / dy);
 
-const float CFL = 0.2f;
+const float CFL = 0.7f;
 float dt = 0.0f;
 const int totalStep = 100000;
-const int recordStep = 100;
+const int recordStep = 400;
 float totalTime = 0.0f;
 
 __constant__ float device_EPS;
@@ -239,7 +239,7 @@ inline float getEta(float& xPosition, float& yPosition)
           pow(xPosition - 0.5f * (device_xmax - device_xmin), 2)
         + pow(yPosition - 0.5f * (device_ymax - device_ymin), 2)
         )), -2)
-        * exp(-(static_cast<float>(device_totalTime) / (1.0f * device_alfvenTime)))
+        * exp(-(static_cast<float>(device_totalTime) / (10.0f * device_alfvenTime)))
         + device_eta1;
     
     return eta;

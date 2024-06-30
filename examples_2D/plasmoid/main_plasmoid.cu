@@ -8,9 +8,9 @@
 #include "../../lib_ResistiveMHD_2D_GPU_symmetricXY/resistiveMHD_2D.hpp"
 
 
-std::string directoryname = "results";
+std::string directoryname = "results_plasmoid_eta=10000_grid=8";
 std::string filenameWithoutStep = "plasmoid";
-std::ofstream logfile("results/log_plasmoid.txt");
+std::ofstream logfile("results_plasmoid_eta=10000_grid=8/log_plasmoid.txt");
 
 const double EPS = 1e-20;
 const double PI = 3.141592653589793;
@@ -31,18 +31,18 @@ double eta = eta0 + eta1;
 const double triggerRatio = 0.0;
 
 const double xmin = 0.0;
-const double xmax = 200.0;
-const double dx = sheat_thickness / 16.0;
+const double xmax = 300.0;
+const double dx = sheat_thickness / 8.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
-const double ymax = 20.0;
-const double dy = sheat_thickness / 16.0;
+const double ymax = 30.0;
+const double dy = sheat_thickness / 8.0;
 const int ny = int((ymax - ymin) / dy);
 
-const double CFL = 0.7;
+const double CFL = 0.4;
 double dt = 0.0;
 const int totalStep = 100000;
-const int recordStep = 500;
+const int recordStep = 200;
 double totalTime = 0.0;
 
 __constant__ double device_EPS;
