@@ -40,10 +40,10 @@ const float ymax = 30.0f * sheat_thickness;
 const float dy = sheat_thickness / 16.0f;
 const int ny = int((ymax - ymin) / dy);
 
-const float CFL = 0.7f;
+const float CFL = 0.4f;
 float dt = 0.0f;
-const int totalStep = 100000;
-const int recordStep = 400;
+const int totalStep = 200000;
+const int recordStep = 500;
 float totalTime = 0.0f;
 
 __constant__ float device_EPS;
