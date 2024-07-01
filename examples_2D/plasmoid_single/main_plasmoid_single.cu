@@ -40,10 +40,10 @@ const float ymax = 30.0f * sheat_thickness;
 const float dy = sheat_thickness / 16.0f;
 const int ny = int((ymax - ymin) / dy);
 
-const float CFL = 0.4f;
+const float CFL = 0.7f;
 float dt = 0.0f;
 const int totalStep = 200000;
-const int recordStep = 500;
+const int recordStep = 100;
 float totalTime = 0.0f;
 
 __constant__ float device_EPS;
@@ -233,16 +233,16 @@ void ResistiveMHD2D::initializeU()
 __device__
 inline float getEta(float& xPosition, float& yPosition)
 {
-    float eta;
+    float etaValue;
 
-    eta = device_eta0 * pow(cosh(sqrt(
-          pow(xPosition - 0.5f * (device_xmax - device_xmin), 2)
-        + pow(yPosition - 0.5f * (device_ymax - device_ymin), 2)
-        )), -2)
-        * exp(-(static_cast<float>(device_totalTime) / (10.0f * device_alfvenTime)))
-        + device_eta1;
+    etaValue = device_eta0 * pow(cosh(sqrt(
+               pow(xPosition - 0.5f * (device_xmax - device_xmin), 2)
+             + pow(yPosition - 0.5f * (device_ymax - device_ymin), 2)
+             )), -2)
+             * exp(-(static_cast<float>(device_totalTime) / (10.0f * device_alfvenTime)))
+             + device_eta1;
     
-    return eta;
+    return etaValue;
 }
 
 
