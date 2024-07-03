@@ -43,7 +43,7 @@ const int ny = int((ymax - ymin) / dy);
 const float CFL = 0.7f;
 float dt = 0.0f;
 const int totalStep = 200000;
-const int recordStep = 100;
+const int recordStep = 200;
 float totalTime = 0.0f;
 
 __constant__ float device_EPS;

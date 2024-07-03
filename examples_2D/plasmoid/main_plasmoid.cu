@@ -18,7 +18,7 @@ const double PI = 3.141592653589793;
 const double gamma_mhd = 5.0 / 3.0;
 
 const double sheat_thickness = 1.0;
-const double betaUpstream = 0.2;
+const double betaUpstream = 0.1;
 const double rho0 = 1.0;
 const double b0 = 1.0;
 const double p0 = b0 * b0 / 2.0;
@@ -31,15 +31,15 @@ double eta = eta0 + eta1;
 const double triggerRatio = 0.0;
 
 const double xmin = 0.0;
-const double xmax = 300.0;
-const double dx = sheat_thickness / 8.0;
+const double xmax = 100.0;
+const double dx = sheat_thickness / 16.0;
 const int nx = int((xmax - xmin) / dx);
 const double ymin = 0.0;
-const double ymax = 30.0;
-const double dy = sheat_thickness / 8.0;
+const double ymax = 10.0;
+const double dy = sheat_thickness / 16.0;
 const int ny = int((ymax - ymin) / dy);
 
-const double CFL = 0.4;
+const double CFL = 0.7;
 double dt = 0.0;
 const int totalStep = 100000;
 const int recordStep = 200;
