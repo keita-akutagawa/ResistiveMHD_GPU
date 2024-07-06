@@ -211,7 +211,7 @@ void ResistiveMHD2D::save(
     std::ofstream ofs(filename, std::ios::binary);
     ofs << std::fixed << std::setprecision(6);
 
-    for (int i = 0; i < nx - 1; i++) {
+    for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {
             ofs.write(reinterpret_cast<const char*>(&hU[j + i * ny].rho), sizeof(float));
             ofs.write(reinterpret_cast<const char*>(&hU[j + i * ny].rhoU), sizeof(float));
@@ -223,24 +223,6 @@ void ResistiveMHD2D::save(
             ofs.write(reinterpret_cast<const char*>(&hU[j + i * ny].e), sizeof(float));
         }
     }
-    for (int j = 0; j < ny - 1; j++) {
-        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].rho), sizeof(float));
-        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].rhoU), sizeof(float));
-        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].rhoV), sizeof(float));
-        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].rhoW), sizeof(float));
-        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].bX), sizeof(float));
-        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].bY), sizeof(float));
-        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].bZ), sizeof(float));
-        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].e), sizeof(float));
-    }
-    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].rho), sizeof(float));
-    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].rhoU), sizeof(float));
-    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].rhoV), sizeof(float));
-    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].rhoW), sizeof(float));
-    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].bX), sizeof(float));
-    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].bY), sizeof(float));
-    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].bZ), sizeof(float));
-    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].e), sizeof(float));
 }
 
 
