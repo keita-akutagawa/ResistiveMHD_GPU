@@ -27,7 +27,9 @@ public:
 
     virtual void initializeU(); 
 
-    void oneStepRK2();
+    void oneStepRK2SymmetricXY();
+
+    void oneStepRK2PeriodicXSymmetricY();
 
     void save(
         std::string directoryname, 

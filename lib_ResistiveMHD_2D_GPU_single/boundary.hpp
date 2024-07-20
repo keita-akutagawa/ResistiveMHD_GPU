@@ -25,10 +25,6 @@ public:
         thrust::device_vector<ConservationParameter>& U
     );
 
-    virtual void poyntingFluxY2nd(
-        thrust::device_vector<ConservationParameter>& U
-    );
-
 private:
 
 };

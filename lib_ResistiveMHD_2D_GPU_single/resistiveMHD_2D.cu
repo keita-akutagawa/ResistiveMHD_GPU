@@ -130,7 +130,7 @@ struct oneStepSecondFunctor {
 };
 
 
-void ResistiveMHD2D::oneStepRK2()
+void ResistiveMHD2D::oneStepRK2SymmetricXY()
 {
     dim3 threadsPerBlock(16, 16);
     dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
@@ -195,6 +195,70 @@ void ResistiveMHD2D::oneStepRK2()
 }
 
 
+void ResistiveMHD2D::oneStepRK2PeriodicXSymmetricY()
+{
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((nx + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                       (ny + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    copyBX_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(bXOld.data()), 
+        thrust::raw_pointer_cast(U.data())
+    );
+    copyBY_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(bYOld.data()), 
+        thrust::raw_pointer_cast(U.data())
+    );
+    thrust::copy(U.begin(), U.end(), UBar.begin());
+
+    calculateDt();
+
+    shiftUToCenterForCT(U);
+    fluxF = fluxSolver.getFluxF(U);
+    fluxG = fluxSolver.getFluxG(U);
+    backUToCenterHalfForCT(U);
+
+    auto tupleForFluxFirst = thrust::make_tuple(
+        U.begin(), fluxF.begin(), fluxF.begin() - ny, fluxG.begin(), fluxG.begin() - 1
+    );
+    auto tupleForFluxFirstIterator = thrust::make_zip_iterator(tupleForFluxFirst);
+    thrust::transform(
+        tupleForFluxFirstIterator + ny, 
+        tupleForFluxFirstIterator + nx * ny, 
+        UBar.begin() + ny, 
+        oneStepFirstFunctor()
+    );
+
+    ct.setOldFlux2D(fluxF, fluxG);
+    ct.divBClean(bXOld, bYOld, UBar);
+
+    boundary.periodicBoundaryX2nd(UBar);
+    boundary.symmetricBoundaryY2nd(UBar);
+
+    shiftUToCenterForCT(UBar);
+    fluxF = fluxSolver.getFluxF(UBar);
+    fluxG = fluxSolver.getFluxG(UBar);
+    backUToCenterHalfForCT(UBar);
+
+    auto tupleForFluxSecond = thrust::make_tuple(
+        U.begin(), UBar.begin(), fluxF.begin(), fluxF.begin() - ny, fluxG.begin(), fluxG.begin() - 1
+    );
+    auto tupleForFluxSecondIterator = thrust::make_zip_iterator(tupleForFluxSecond);
+    thrust::transform(
+        tupleForFluxSecondIterator + ny, 
+        tupleForFluxSecondIterator + nx * ny, 
+        U.begin() + ny, 
+        oneStepSecondFunctor()
+    );
+
+    ct.divBClean(bXOld, bYOld, U);
+
+    //これはどうにかすること。保守性が低い
+    boundary.periodicBoundaryX2nd(U);
+    boundary.symmetricBoundaryY2nd(U);
+}
+
+
 void ResistiveMHD2D::save(
     std::string directoryname, 
     std::string filenameWithoutStep, 
@@ -211,7 +275,7 @@ void ResistiveMHD2D::save(
     std::ofstream ofs(filename, std::ios::binary);
     ofs << std::fixed << std::setprecision(6);
 
-    for (int i = 0; i < nx; i++) {
+    for (int i = 0; i < nx - 1; i++) {
         for (int j = 0; j < ny; j++) {
             ofs.write(reinterpret_cast<const char*>(&hU[j + i * ny].rho), sizeof(float));
             ofs.write(reinterpret_cast<const char*>(&hU[j + i * ny].rhoU), sizeof(float));
@@ -223,6 +287,24 @@ void ResistiveMHD2D::save(
             ofs.write(reinterpret_cast<const char*>(&hU[j + i * ny].e), sizeof(float));
         }
     }
+    for (int j = 0; j < ny - 1; j++) {
+        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].rho), sizeof(float));
+        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].rhoU), sizeof(float));
+        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].rhoV), sizeof(float));
+        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].rhoW), sizeof(float));
+        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].bX), sizeof(float));
+        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].bY), sizeof(float));
+        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].bZ), sizeof(float));
+        ofs.write(reinterpret_cast<const char*>(&hU[j + (nx - 1) * ny].e), sizeof(float));
+    }
+    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].rho), sizeof(float));
+    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].rhoU), sizeof(float));
+    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].rhoV), sizeof(float));
+    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].rhoW), sizeof(float));
+    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].bX), sizeof(float));
+    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].bY), sizeof(float));
+    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].bZ), sizeof(float));
+    ofs.write(reinterpret_cast<const char*>(&hU[ny - 1 + (nx - 1) * ny].e), sizeof(float));
 }
 
 
@@ -265,9 +347,10 @@ void ResistiveMHD2D::calculateDt()
         calculateDtFunctor()
     );
 
-    thrust::device_vector<float>::iterator dtMin = thrust::min_element(dtVector.begin(), dtVector.end());
+    thrust::device_vector<float>::iterator dtMinIt = thrust::min_element(dtVector.begin(), dtVector.end());
+    float dtMin = *dtMinIt;
 
-    dt = min((*dtMin), min(dx * dx / eta, dy * dy / eta)) * CFL;
+    dt = std::min(dtMin, std::min(dx * dx / eta, dy * dy / eta)) * CFL;
 
     cudaMemcpyToSymbol(device_dt, &dt, sizeof(float));
 }
