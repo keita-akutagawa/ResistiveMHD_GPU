@@ -10,12 +10,12 @@
 #include <curand_kernel.h>
 
 
-std::string directoryname = "results_tearing";
+std::string directoryname = "results_tearing_1e-6";
 std::string filenameWithoutStep = "tearing";
-std::ofstream logfile("results_tearing/log_tearing.txt");
+std::ofstream logfile("results_tearing_1e-6/log_tearing.txt");
 
-const int totalStep = 10000;
-const int recordStep = 1000;
+const int totalStep = 20000;
+const int recordStep = 500;
 float totalTime = 0.0f;
 
 
@@ -99,10 +99,9 @@ __global__ void initializeU_kernel(ConservationParameter* U)
         float xHalf = (i + 0.5f) * device_dx, yHalf = (j + 0.5f) * device_dy;
         float xCenter = 0.5f * (device_xmax - device_xmin), yCenter = 0.5f * (device_ymax - device_ymin);
         float xi, phi, kmax;
-        //curandState state; 
-        //curand_init(0, j + device_ny * i, 0, &state);
-        //phi = 2.0 * device_PI * curand_uniform(&state);
-        phi = 0.0f;
+        curandState state; 
+        curand_init(0, j + device_ny * i, 0, &state);
+        phi = 1.0f * device_PI * (curand_uniform(&state) - 1.0f);
         xi = 0.1f * (y - yCenter) / device_sheatThickness;
         kmax = pow(device_eta, 1.0f / 4.0f) / device_sheatThickness;
         
