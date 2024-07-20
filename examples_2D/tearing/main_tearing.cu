@@ -4,15 +4,15 @@
 #include <iostream>
 #include <fstream>
 #include <iomanip>
-#include "../lib_ResistiveMHD_2D_GPU_single/const.hpp"
-#include "../lib_ResistiveMHD_2D_GPU_single/resistiveMHD_2D.hpp"
+#include "../../lib_ResistiveMHD_2D_GPU_single/const.hpp"
+#include "../../lib_ResistiveMHD_2D_GPU_single/resistiveMHD_2D.hpp"
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
 
-std::string directoryname = "/cfca-work/akutagawakt/ResistiveMHD/results_tearing";
+std::string directoryname = "/results_tearing";
 std::string filenameWithoutStep = "tearing";
-std::ofstream logfile("/cfca-work/akutagawakt/ResistiveMHD/results_tearing/log_tearing.txt");
+std::ofstream logfile("/results_tearing/log_tearing.txt");
 
 const int totalStep = 10000;
 const int recordStep = 1000;
