@@ -10,9 +10,9 @@
 #include <curand_kernel.h>
 
 
-std::string directoryname = "/results_tearing";
+std::string directoryname = "results_tearing";
 std::string filenameWithoutStep = "tearing";
-std::ofstream logfile("/results_tearing/log_tearing.txt");
+std::ofstream logfile("results_tearing/log_tearing.txt");
 
 const int totalStep = 10000;
 const int recordStep = 1000;
@@ -39,11 +39,11 @@ const float triggerRatio = 0.01f;
 
 const float xmin = 0.0f;
 const float xmax = 5.0f * 2.0f * PI * sheatThickness / pow(eta, 1.0f / 4.0f);
-const float dx = sheatThickness / 32.0f;
+const float dx = sheatThickness / 16.0f;
 const int nx = int((xmax - xmin) / dx);
 const float ymin = 0.0f;
 const float ymax = 20.0f * sheatThickness;
-const float dy = sheatThickness / 32.0f;
+const float dy = sheatThickness / 16.0f;
 const int ny = int((ymax - ymin) / dy);
 
 const float CFL = 0.7f;
@@ -103,7 +103,7 @@ __global__ void initializeU_kernel(ConservationParameter* U)
         //curand_init(0, j + device_ny * i, 0, &state);
         //phi = 2.0 * device_PI * curand_uniform(&state);
         phi = 0.0f;
-        xi = 0.01f * (y - yCenter) / device_sheatThickness;
+        xi = 0.1f * (y - yCenter) / device_sheatThickness;
         kmax = pow(device_eta, 1.0f / 4.0f) / device_sheatThickness;
         
         rho = device_rho0;
