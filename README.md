@@ -1,10 +1,8 @@
-ResistiveMHDシミュレーションのコードです。\
-C++で書かれています。
+Resistive MHD simulation code written in CUDA C++ (& Thrust) & MPI.
 
-Thrustライブラリ(CUDA)を用いてGPU並列化を施しています。
+## Scheme
 
-## スキーム
 - HLLD
-- MUSCL(minmod) : 空間2次精度
-- CT(average)
-- RK2 : 時間2次精度
+- MUSCL(minmod) : 2nd order
+- CT-Contact
+- Runge-Kutta2 : 2nd order
