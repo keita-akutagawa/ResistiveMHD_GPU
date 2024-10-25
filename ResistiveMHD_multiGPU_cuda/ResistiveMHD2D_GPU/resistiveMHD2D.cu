@@ -377,6 +377,83 @@ void ResistiveMHD2D::oneStepRK2_periodicXSymmetricY()
 }
 
 
+void ResistiveMHD2D::oneStepRK2_flareXWallY()
+{
+    dim3 threadsPerBlock(16, 16);
+    dim3 blocksPerGrid((mPIInfo.localSizeX + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                       (mPIInfo.localSizeY + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    
+    copyBX_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(bXOld.data()), 
+        thrust::raw_pointer_cast(U.data()), 
+        mPIInfo.localSizeX, mPIInfo.localSizeY
+    );
+    cudaDeviceSynchronize();
+    copyBY_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(bYOld.data()), 
+        thrust::raw_pointer_cast(U.data()), 
+        mPIInfo.localSizeX, mPIInfo.localSizeY
+    );
+    cudaDeviceSynchronize();
+    thrust::copy(U.begin(), U.end(), UBar.begin());
+    cudaDeviceSynchronize();
+
+    calculateDt();
+
+    shiftUToCenterForCT(U);
+    fluxF = fluxSolver.getFluxF(U);
+    fluxG = fluxSolver.getFluxG(U);
+    backUToCenterHalfForCT(U);
+
+    ct.setOldFlux2D(fluxF, fluxG, U);
+
+    oneStepFirst_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(U.data()), 
+        thrust::raw_pointer_cast(fluxF.data()), 
+        thrust::raw_pointer_cast(fluxG.data()), 
+        thrust::raw_pointer_cast(UBar.data()), 
+        mPIInfo.localSizeX, mPIInfo.localSizeY
+    );
+    cudaDeviceSynchronize();
+
+    sendrecv_U(UBar, mPIInfo);
+    boundary.flareBoundaryX2nd_U(UBar);
+    boundary.wallBoundaryY2nd_U(UBar);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    shiftUToCenterForCT(UBar);
+    fluxF = fluxSolver.getFluxF(UBar);
+    fluxG = fluxSolver.getFluxG(UBar);
+    backUToCenterHalfForCT(UBar);
+
+    oneStepSecond_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(UBar.data()), 
+        thrust::raw_pointer_cast(fluxF.data()), 
+        thrust::raw_pointer_cast(fluxG.data()), 
+        thrust::raw_pointer_cast(U.data()), 
+        mPIInfo.localSizeX, mPIInfo.localSizeY
+    );
+    cudaDeviceSynchronize();
+
+    sendrecv_U(U, mPIInfo);
+    boundary.flareBoundaryX2nd_U(U);
+    boundary.wallBoundaryY2nd_U(U);
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    ct.setNowFlux2D(fluxF, fluxG, U);
+
+    ct.divBClean(bXOld, bYOld, U);
+
+    sendrecv_U(U, mPIInfo);
+    boundary.flareBoundaryX2nd_U(U);
+    boundary.wallBoundaryY2nd_U(U);
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+
 void ResistiveMHD2D::save(
     std::string directoryname, 
     std::string filenameWithoutStep, 

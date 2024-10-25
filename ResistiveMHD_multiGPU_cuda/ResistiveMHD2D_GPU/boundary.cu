@@ -192,6 +192,74 @@ void Boundary::wallBoundaryY2nd_flux(
 
 //////////
 
+//左は磁力線が刺さる壁。右は対称境界
+__global__
+void flareBoundaryX2nd_U_kernel(
+    ConservationParameter* U, 
+    int localSizeX, int localSizeY, 
+    MPIInfo* device_mPIInfo
+)
+{
+    int j = blockIdx.x * blockDim.x + threadIdx.x;
+    MPIInfo mPIInfo = *device_mPIInfo;
+
+    if (j < localSizeY) {
+        if (mPIInfo.localGridX == 0) {
+            int index = j + 0 * localSizeY;
+
+            double rho, u, v, w, bX, bY, bZ, p, e;
+            ConservationParameter flareU;
+
+            rho = U[index + mPIInfo.buffer * localSizeY].rho;
+            u   = U[index + mPIInfo.buffer * localSizeY].rhoU / rho; 
+            v   = U[index + mPIInfo.buffer * localSizeY].rhoV / rho; 
+            w   = U[index + mPIInfo.buffer * localSizeY].rhoW / rho;
+            bX  = U[index + mPIInfo.buffer * localSizeY].bX; 
+            bY  = U[index + mPIInfo.buffer * localSizeY].bY;
+            bZ  = U[index + mPIInfo.buffer * localSizeY].bZ;
+            e   = U[index + mPIInfo.buffer * localSizeY].e;
+            p   = (device_gamma_mhd - 1.0)
+                * (e - 0.5 * rho * (u * u + v * v + w * w)
+                - 0.5 * (bX * bX + bY * bY + bZ * bZ));
+            
+            flareU.rho = rho;
+            flareU.rhoU = rho * 0.0; flareU.rhoV = rho * v; flareU.rhoW = rho * 0.0;
+            flareU.bX = bX; flareU.bY = 0.0; flareU.bZ = bZ;
+            e = p / (device_gamma_mhd - 1.0) + 0.5 * rho * (0.0 * 0.0 + v * v + 0.0 * 0.0)
+            + 0.5 * (bX * bX + 0.0 * 0.0 + bZ * bZ); 
+            flareU.e = e;
+
+            for (int buf = 0; buf < mPIInfo.buffer; buf++) {
+                U[index + buf * localSizeY] = flareU;
+            }
+        }
+        
+        if (mPIInfo.localGridX == mPIInfo.gridX - 1) {
+            int index = j + (localSizeX - 1) * localSizeY;
+
+            for (int buf = 0; buf < mPIInfo.buffer; buf++) {
+                U[index - buf * localSizeY] = U[index - mPIInfo.buffer * localSizeY];
+            }
+        }
+    }
+}
+
+void Boundary::flareBoundaryX2nd_U(
+    thrust::device_vector<ConservationParameter>& U
+)
+{
+    int threadsPerBlock = 256;
+    int blocksPerGrid = (mPIInfo.localSizeY + threadsPerBlock - 1) / threadsPerBlock;
+
+    flareBoundaryX2nd_U_kernel<<<blocksPerGrid, threadsPerBlock>>>(
+        thrust::raw_pointer_cast(U.data()), 
+        mPIInfo.localSizeX, mPIInfo.localSizeY, 
+        device_mPIInfo
+    );
+    cudaDeviceSynchronize();
+}
+
+
 __global__
 void symmetricBoundaryY2nd_U_kernel(
     ConservationParameter* U, 

@@ -45,6 +45,8 @@ public:
 
     void oneStepRK2_periodicXSymmetricY();
 
+    void oneStepRK2_flareXWallY(); //左は磁力線が刺さる壁。右は対称境界
+
     void save(
         std::string directoryname, 
         std::string filenameWithoutStep, 

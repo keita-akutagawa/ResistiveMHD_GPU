@@ -47,11 +47,9 @@ public:
         thrust::device_vector<Flux>& fluxG
     );
 
-    /*
-    void symmetricBoundaryX2nd_U(
+    void flareBoundaryX2nd_U(
         thrust::device_vector<ConservationParameter>& U
     );
-    */
 
     void symmetricBoundaryY2nd_U(
         thrust::device_vector<ConservationParameter>& U
