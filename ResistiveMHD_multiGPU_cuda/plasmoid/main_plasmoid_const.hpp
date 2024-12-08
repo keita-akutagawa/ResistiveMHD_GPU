@@ -31,7 +31,7 @@ const double VA = b0 / sqrt(rho0);
 const double alfvenTime = sheatThickness / VA;
 
 const double eta = 1.0 / 1000.0;
-const double triggerRatio = 0.1;
+const double triggerRatio = 0.01;
 
 const double xmin = 0.0;
 const double xmax = 200.0;

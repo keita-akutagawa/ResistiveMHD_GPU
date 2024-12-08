@@ -17,34 +17,26 @@ __global__ void initializeU_kernel(
 
             double rho, u, v, w, bX, bY, bZ, e, p;
             double bXHalf, bYHalf;
-            double x = i * device_dx, y = j * device_dy;
-            double xHalf = (i + 0.5) * device_dx, yHalf = (j + 0.5) * device_dy;
-            double xCenter = 0.5 * (device_xmax - device_xmin), yCenter = 0.5 * (device_ymax - device_ymin);
-            double coef = 1.0;
+            double y = j * device_dy;
+            double yCenter = 0.5 * (device_ymax - device_ymin);
+            double xi, kmax;
+            double coef = 5.0 * device_sheatThickness; 
+            xi = (y - yCenter) / coef;
+            kmax = 2.0 * device_PI / device_xmax;
             
-            rho    = device_rho0 * (sqrt(device_betaUpstream) + pow(cosh((y - yCenter) / device_sheatThickness), -2));
-            u      = 0.0;
-            v      = 0.0;
-            w      = 0.0;
-            bX     = device_b0 * tanh((y - yCenter) / device_sheatThickness)
-                   - device_b0 * device_triggerRatio * (y - yCenter) / pow(coef, 2) / device_sheatThickness
-                   * exp(-(pow((x - xCenter) / coef, 2) + pow((y - yCenter) / coef, 2))
-                   / pow(2.0 * device_sheatThickness, 2));
-            bXHalf = device_b0 * tanh((y - yCenter) / device_sheatThickness)
-                   - device_b0 * device_triggerRatio * (y - yCenter) / pow(coef, 2) / device_sheatThickness
-                   * exp(-(pow((xHalf - xCenter) / coef, 2) + pow((y - yCenter) / coef, 2))
-                   / pow(2.0 * device_sheatThickness, 2));
-            bY     = device_b0 * device_triggerRatio * (x - xCenter) / pow(coef, 2) / device_sheatThickness
-                   * exp(-(pow((x - xCenter) / coef, 2) + pow((y - yCenter) / coef, 2))
-                   / pow(2.0 * device_sheatThickness, 2));
-            bYHalf = device_b0 * device_triggerRatio * (x - xCenter) / pow(coef, 2) / device_sheatThickness
-                   * exp(-(pow((x - xCenter) / coef, 2) + pow((yHalf - yCenter) / coef, 2))
-                   / pow(2.0 * device_sheatThickness, 2));
-            bZ     = 0.0;
-            p      = device_p0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheatThickness), -2));
-            e      = p / (device_gamma_mhd - 1.0)
-                   + 0.5 * rho * (u * u + v * v + w * w)
-                   + 0.5 * (bX * bX + bY * bY + bZ * bZ);
+            rho = device_rho0 * (sqrt(device_betaUpstream) + pow(cosh((y - yCenter) / device_sheatThickness), -2));
+            u = -device_triggerRatio * device_VA / coef / kmax / pow(cosh((y - yCenter) / coef), 2) * sin(kmax * i * device_dx);
+            v = device_triggerRatio * device_VA * tanh(xi) * cos(kmax * i * device_dx);
+            w = 0.0;
+            bX = device_b0 * tanh((y - yCenter) / device_sheatThickness);
+            bXHalf = device_b0 * tanh((y - yCenter) / device_sheatThickness);
+            bY = 0.0;
+            bYHalf = 0.0;
+            bZ = 0.0;
+            p = device_p0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheatThickness), -2));
+            e = p / (device_gamma_mhd - 1.0)
+            + 0.5 * rho * (u * u + v * v + w * w)
+            + 0.5 * (bX * bX + bY * bY + bZ * bZ);
             
             U[index].rho  = rho;
             U[index].rhoU = rho * u;
