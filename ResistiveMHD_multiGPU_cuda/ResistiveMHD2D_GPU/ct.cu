@@ -35,7 +35,7 @@ __global__ void setFlux_kernel(
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (0 < i && i < localSizeX && 0 < j && j < localSizeY) {
+    if (0 < i && i < localSizeX - 1 && 0 < j && j < localSizeY - 1) {
         int index = j + i * localSizeY;
         double rho, u, v, bX, bY;
         double xPosition = i * device_dx, yPosition = j * device_dy;
