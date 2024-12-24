@@ -50,17 +50,16 @@ __global__ void addResistiveTermToFluxF_kernel(
         double eta, etaJY, etaJZ, etaJYBZ, etaJZBY;
 
         jY = -(U[index + localSizeY].bZ - U[index].bZ) / device_dx;
-        jZ = (U[index + localSizeY].bY - U[index].bY) / device_dx
-           - 0.5 * 
-            ((U[index + 1].bX - U[index - 1].bX) / (2.0 * device_dy)
-           + (U[index + 1 + localSizeY].bX - U[index - 1 + localSizeY].bX) / (2.0 * device_dy)
-            );
-    
+        jZ = 0.5 * (
+             (U[index + localSizeY].bY - U[index].bY) / device_dx - (U[index + 1].bX - U[index].bX) / device_dy
+           + (U[index + localSizeY - 1].bY - U[index - 1].bY) / device_dx - (U[index].bX - U[index - 1].bX) / device_dy
+        );
+           
         eta = getEta(xPosition, yPosition);
         etaJY = eta * jY; 
         etaJZ = eta * jZ;
         etaJYBZ = etaJY * 0.5 * (U[index].bZ + U[index + localSizeY].bZ);
-        etaJZBY = etaJZ * 0.5 * (U[index].bY + U[index + localSizeY].bY);
+        etaJZBY = etaJZ * 0.25 * (U[index].bY + U[index + localSizeY].bY + U[index + localSizeY - 1].bY + U[index - 1].bY);
   
         flux[index].f5 -= etaJZ;
         flux[index].f6 += etaJY;
@@ -102,16 +101,15 @@ __global__ void addResistiveTermToFluxG_kernel(
 
         jX = (U[index + 1].bZ - U[index].bZ) / device_dy;
         jZ = 0.5 * (
-             (U[index + localSizeY].bY - U[index - localSizeY].bY) / (2.0 * device_dx)
-           + (U[index + 1 + localSizeY].bY - U[index + 1 - localSizeY].bY) / (2.0 * device_dx)
-           )
-           - (U[index + 1].bX - U[index].bX) / device_dy;
+             (U[index + localSizeY].bY - U[index].bY) / device_dx - (U[index + 1].bX - U[index].bX) / device_dy
+           + (U[index].bY - U[index - localSizeY].bY) / device_dx - (U[index - localSizeY + 1].bX - U[index - localSizeY].bX) / device_dy
+        );
         
         eta = getEta(xPosition, yPosition);
         etaJX = eta * jX;
         etaJZ = eta * jZ;
         etaJXBZ = etaJX * 0.5 * (U[index].bZ + U[index + 1].bZ);
-        etaJZBX = etaJZ * 0.5 * (U[index].bX + U[index + 1].bX);
+        etaJZBX = etaJZ * 0.25 * (U[index].bX + U[index + 1].bX + U[index - localSizeY + 1].bX + U[index - localSizeY].bX);
   
         flux[index].f4 += etaJZ;
         flux[index].f6 -= etaJX;
