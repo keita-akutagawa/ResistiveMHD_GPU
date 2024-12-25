@@ -18,22 +18,20 @@ __global__ void initializeU_kernel(
             double rho, u, v, w, bX, bY, bZ, e, p;
             double bXHalf, bYHalf;
             double x = i * device_dx, y = j * device_dy;
-            double xHalf = (i + 0.5) * device_dx, yHalf = (j + 0.5) * device_dy;
             double xCenter = 0.5 * (device_xmax - device_xmin), yCenter = 0.5 * (device_ymax - device_ymin);
-            double xi, kmax;
-            double S = device_xmax * device_sheatThickness / device_eta;
-            double coef = 1.0 / (5.0 * device_sheatThickness);
-            xi = (y - yCenter) * coef;
-            kmax = 2.0 * device_PI / device_xmax;
+            double coef = 1.0;
             
             rho = device_rho0 * (sqrt(device_betaUpstream) + pow(cosh((y - yCenter) / device_sheatThickness), -2));
-            u = 0.0; 
-            v = 0.0;
-            w = 0.0;
-            bX = device_b0 * tanh((y - yCenter) / device_sheatThickness);
-            bXHalf = device_b0 * tanh((y - yCenter) / device_sheatThickness);
-            bY = 0.0;
-            bYHalf = 0.0;
+            u   = 0.0; 
+            v   = 0.0;
+            w   = 0.0;
+            bX  = device_b0 * tanh((y - yCenter) / device_sheatThickness)
+                - device_b0 * device_triggerRatio * (y - yCenter) / pow(coef, 2) / device_sheatThickness
+                * exp(-(pow((x - xCenter) / coef, 2) + pow((y - yCenter) / coef, 2))
+                / pow(2.0 * device_sheatThickness, 2));
+            bY     = device_b0 * device_triggerRatio * (x - xCenter) / pow(coef, 2) / device_sheatThickness
+                   * exp(-(pow((x - xCenter) / coef, 2) + pow((y - yCenter) / coef, 2))
+                   / pow(2.0 * device_sheatThickness, 2));
             bZ = 0.0;
             p = device_p0 * (device_betaUpstream + pow(cosh((y - yCenter) / device_sheatThickness), -2));
             e = p / (device_gamma_mhd - 1.0)
@@ -44,8 +42,8 @@ __global__ void initializeU_kernel(
             U[index].rhoU = rho * u;
             U[index].rhoV = rho * v;
             U[index].rhoW = rho * w;
-            U[index].bX   = bXHalf;
-            U[index].bY   = bYHalf;
+            U[index].bX   = bX;
+            U[index].bY   = bY;
             U[index].bZ   = bZ;
             U[index].e    = e;
         }
@@ -87,9 +85,7 @@ double getEta(double& xPosition, double& yPosition)
     double etaLocal;
     double xCenter = 0.5 * (device_xmax - device_xmin), yCenter = 0.5 * (device_ymax - device_ymin);
 
-    etaLocal = device_eta
-             + 100 * device_eta * exp(-pow((xPosition - xCenter) / device_sheatThickness, 2) + -pow((yPosition - yCenter) / device_sheatThickness, 2))
-             * exp(-device_totalTime / 5);
+    etaLocal = device_eta;
     
     return etaLocal;
 }
