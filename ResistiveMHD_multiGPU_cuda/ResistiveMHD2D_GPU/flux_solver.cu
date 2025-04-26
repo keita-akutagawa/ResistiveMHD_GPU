@@ -163,7 +163,7 @@ __global__ void addResistiveTermToFluxG_kernel(
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if ((0 < i) && (i < localSizeX - 1) && (0 < j) && (j < localSizeY - 1)) {
+    if ((0 < i) && (i < localSizeX - 2) && (0 < j) && (j < localSizeY - 1)) {
         int index = j + i * localSizeY;
 
         double xPosition = i * device_dx, yPosition = (j + 0.5) * device_dy;
